@@ -63,10 +63,11 @@ if __name__ == '__main__':
         print bin_im_or.shape[:2]
         print rgb_im_or.shape[:2]
         
-        #define windows size, pyramid hight and create a directory
-        w, h = 64, 128
+        #define windows size, pyramid hight, windows shift and create a directory
+        w, h = 90, 100
         pyr_hight = 3
-        directory = os.path.join(train_path, str(pyr_hight)+"_"+str(w)+"_"+str(h));
+        shift = 10
+        directory = os.path.join(train_path, str(pyr_hight)+"_"+str(w)+"_"+str(h)+"_"+str(shift));
         if not os.path.exists(directory):
             os.makedirs(directory)
             
@@ -86,9 +87,9 @@ if __name__ == '__main__':
                 continue
                 
             acumulative = createAcumulative(bin_im)
-            for i in range(0, n-h):
-                for j in range(0, m-w):
-                    percentage = int((query(acumulative, i, j, i+h, j+w)*100.0)/(1.0*h*w))
+            for i in range(0, n-h, shift):
+                for j in range(0, m-w, shift):
+                    percentage = int((query(acumulative, i, j, i+h-1, j+w-1)*100.0)/(1.0*h*w))
                     cropped = rgb_im[i:i+h][j:j+w]
                     pos = name.find("_")
                     pos = name.find("_", pos+1)
