@@ -53,7 +53,6 @@ if __name__ == '__main__':
     print "Path to rgb images : ", rgb_path
 
     #process images
-    cnt = 0;
     for name in training_names:
         #read images
         image_path = os.path.join(bin_path, name)
@@ -64,10 +63,10 @@ if __name__ == '__main__':
         print rgb_im_or.shape[:2]
         
         #define windows size, pyramid hight, windows shift and create a directory
-        w, h = 90, 100
+        w, h = 100, 100
         pyr_hight = 3
-        shift = 10
-        directory = os.path.join(train_path, str(pyr_hight)+"_"+str(w)+"_"+str(h)+"_"+str(shift));
+        shift = 20
+        directory = os.path.join(train_path, str(pyr_hight)+"_"+str(h)+"_"+str(w)+"_"+str(shift))
         if not os.path.exists(directory):
             os.makedirs(directory)
             
@@ -80,17 +79,17 @@ if __name__ == '__main__':
             rgb_im = cv2.resize(rgb_im_or, (0,0), fx = 1.0/(k+1), fy = 1/(k+1.0));
             print "Factor : ", k+1
             n, m = bin_im.shape[:2]
-            if(n==0 or m==0):
+            if(n<h or m<w):
                 continue
             n, m = rgb_im.shape[:2]
-            if(n==0 or m==0):
+            if(n<h or m<w):
                 continue
                 
             acumulative = createAcumulative(bin_im)
             for i in range(0, n-h, shift):
                 for j in range(0, m-w, shift):
                     percentage = int((query(acumulative, i, j, i+h-1, j+w-1)*100.0)/(1.0*h*w))
-                    cropped = rgb_im[i:i+h][j:j+w]
+                    cropped = rgb_im[i:i+h, j:j+w]
                     pos = name.find("_")
                     pos = name.find("_", pos+1)
                     saveName = name[:pos+1]
@@ -98,4 +97,5 @@ if __name__ == '__main__':
                     it+=1
                     cv2.imwrite(os.path.join(directory, saveName), cropped)
                     cnt[percentage]+=1
+                    #print cropped.shape[:2]
         print cnt           
