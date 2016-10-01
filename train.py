@@ -40,12 +40,6 @@ if __name__ == '__main__':
     train_path = args["dataset"]
     training_names = os.listdir(train_path)
 
-
-    #create save directory
-    directory = train_path + "_trained_" + str(classNumber) + "_" + str(hogOrientation) + "_" + str(hogCellsPerBlock) + "_" + str(hogPixelPerCell)
-    if not os.path.exists(directory):
-            os.makedirs(directory)    
-
     #create models    
     SVMclassifier = SVC
     SVMregressor = SVR
@@ -64,6 +58,13 @@ if __name__ == '__main__':
     hogOrientation = 18
     featureList = []
     labelList = []
+    percentageList = []
+    
+    #create save directory
+    directory = train_path + "_trained_" + str(classNumber) + "_" + str(hogOrientation) + "_" + str(hogCellsPerBlock) + "_" + str(hogPixelPerCell)
+    if not os.path.exists(directory):
+            os.makedirs(directory)
+    
     for name in training_names:
         classID = getClass(int(getPercentage(name)), classNumber)
         imagePath = os.path.join(train_path, name)
@@ -72,29 +73,48 @@ if __name__ == '__main__':
         features = hog(im, orientations=hogOrientation,  pixels_per_cell=hogPixelPerCell, cells_per_block=hogCellsPerBlock, visualise=False)
         featureList.append(features)
         labelList.append(classID)
+        percentageList.append(int(getPercentage(name))
         cnt[classID]+=1
     print "Number of elements per class:"
-    print cnt
-    joblib.dump((featureList, labelList, cnt), os.path.join(directory, "features_labels.pkl"), compress=3)
+    joblib.dump((featureList, labelList, percentageList, cnt), os.path.join(directory, "features_labels.pkl"))
+    print cnt    
     
     #train and save models
+    print "Model Training has began"
     SVMclassifier.fit(featureList, labelList)
-    joblib.dump(SVMclassifier, os.path.join(directory, "SVMclassifier.pkl"), compress=3)
+    print "saving model ..."
+    joblib.dump(SVMclassifier, os.path.join(directory, "SVMclassifier.pkl"))
+    print "SVMclassifier has been saved"
     
+    print "Model Training has began"
     SVMregressor.fit(featureList, labelList)
-    joblib.dump(SVMregressor, os.path.join(directory, "SVMregressor.pkl"), compress=3)
+    print "saving model ..."
+    joblib.dump(SVMregressor, os.path.join(directory, "SVMregressor.pkl"))
+    print "SVMregressor has been saved"
     
+    print "Model Training has began"
     ForestClassifier.fit(featureList, labelList)
-    joblib.dump(ForestClassifier, os.path.join(directory, "ForestClassifier.pkl"), compress=3)
+    print "saving model ..."
+    joblib.dump(ForestClassifier, os.path.join(directory, "ForestClassifier.pkl"))
+    print "ForestClassifier has been saved"
     
+    print "Model Training has began"
     ForestRegressor.fit(featureList, labelList)
-    joblib.dump(ForestRegressor, os.path.join(directory, "ForestRegressor.pkl"), compress=3)
+    print "saving model ..."
+    joblib.dump(ForestRegressor, os.path.join(directory, "ForestRegressor.pkl"))
+    print "ForestRegressor has been saved"
     
+    print "Model Training has began"
     ADAclasifier.fit(featureList, labelList)
-    joblib.dump(ADAclasifier, os.path.join(directory, "ADAclasifier.pkl"), compress=3) 
+    print "saving model ..."
+    joblib.dump(ADAclasifier, os.path.join(directory, "ADAclasifier.pkl")) 
+    print "ADAclasifier has been saved"
     
+    print "Model Training has began"
     ADAregressor.fit(featureList, labelList)
-    joblib.dump(ADAregressor, os.path.join(directory, "ADAregressor.pkl"), compress=3)
+    print "saving model ..."
+    joblib.dump(ADAregressor, os.path.join(directory, "ADAregressor.pkl"))
+    print "ADAregressor has been saved"
     
 
     
