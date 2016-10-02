@@ -33,14 +33,14 @@ if __name__ == '__main__':
     print "SVM regressor loaded"
     
     #recover training metadata
-    w, h = 100, 100
+    w, h = 50, 50
     pyr_hight = 3
     shift = 20
     
     classNumber = 5
-    hogCellsPerBlock = (3, 3)
-    hogPixelPerCell = (6, 6)
-    hogOrientation = 18
+    hogCellsPerBlock = (2, 2)
+    hogPixelPerCell = (9, 9)
+    hogOrientation = 9
         
     #process images
     for name in training_names:

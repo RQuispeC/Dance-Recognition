@@ -63,12 +63,16 @@ if __name__ == '__main__':
         print rgb_im_or.shape[:2]
         
         #define windows size, pyramid hight, windows shift and create a directory
-        w, h = 100, 100
+        w, h = 50, 50
         pyr_hight = 3
         shift = 20
-        directory = os.path.join(train_path, str(pyr_hight)+"_"+str(h)+"_"+str(w)+"_"+str(shift))
+        tmp_path =os.path.basename(os.path.normpath(train_path))
+        patches_path = train_path[:train_path.find(tmp_path)]
+        directory = os.path.join(patches_path, "patches/"+str(pyr_hight)+"_"+str(h)+"_"+str(w)+"_"+str(shift))
+        print directory
         if not os.path.exists(directory):
             os.makedirs(directory)
+            print "Data will be saved in: ", directory
             
         #slide the window and create the archives with label
         it = 1

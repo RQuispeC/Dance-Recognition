@@ -55,19 +55,47 @@ if __name__ == '__main__':
     #makeClean(training_names, train_path)
     # Extract HOG features and set labels 
     classNumber = 5
-    hogCellsPerBlock = (3, 3)
-    hogPixelPerCell = (6, 6)    
-    hogOrientation = 18
+    hogCellsPerBlock = (2, 2)
+    hogPixelPerCell = (9, 9)    
+    hogOrientation = 9
     cnt = np.zeros(classNumber)
     featureList = []
     labelList = []
     percentageList = []
     
     #create save directory
-    directory = train_path + "_trained_" + str(classNumber) + "_" + str(hogOrientation) + "_" + str(hogCellsPerBlock) + "_" + str(hogPixelPerCell)
+    tmp_path =os.path.basename(os.path.normpath(train_path))
+    patches_matadata = tmp_path
+    models_path = train_path[:train_path.find(tmp_path)]
+    tmp_path =os.path.basename(os.path.normpath(models_path))
+    models_path = train_path[:models_path.find(tmp_path)]
+    
+    directory = os.path.join(models_path, "models/" + patches_matadata + "_trained_" + str(classNumber) + "_" + str(hogOrientation) + "_" + str(hogCellsPerBlock) + "_" + str(hogPixelPerCell))
+    print "Data will be saved in: ", directory
     if not os.path.exists(directory):
             os.makedirs(directory)
-    '''
+    #'''
+    #balance the number of elements per class
+    print "proceesing class numbers"
+    tmpTraining_names = training_names
+    np.random.shuffle(tmpTraining_names) 
+    training_names = []
+    for name in tmpTraining_names:
+        classID = getClass(int(getPercentage(name)), classNumber)
+        cnt[classID]+=1
+    print "initial class number"
+    print cnt
+    lim = min(cnt)
+    cnt = np.zeros(classNumber)
+    for name in tmpTraining_names:
+        classID = getClass(int(getPercentage(name)), classNumber)
+        if(cnt[classID]<lim):
+            training_names.append(name)
+            cnt[classID]+=1
+    tmpTraining_names = []
+    
+    print "extracting features"
+    cnt = np.zeros(classNumber)
     for name in training_names:
         classID = getClass(int(getPercentage(name)), classNumber)
         imagePath = os.path.join(train_path, name)
@@ -85,15 +113,13 @@ if __name__ == '__main__':
     print "reading"
     featureList, labelList, percentageList, cnt = joblib.load(os.path.join(directory, "features_labels.pkl"))
     print "readed"
-    #'''
+    '''
     
-    #process the number f elements per class
-    #tmp =  np.column_stack((featureList, labelList))
-    #print tmp.shape[:2]
+    #balance the number of elements per class when data features are readed
+    '''
     n = min(cnt)
     print cnt
     print n
-    #np.random.shuffle(tmp)
     tmpFeatureList = featureList
     tmpLabelList = labelList
     featureList = []
@@ -107,6 +133,7 @@ if __name__ == '__main__':
             cnt[tmpLabelList[i]]+=1
     tmpFeatureList = []
     tmpLabelList = []
+    '''
     
     #train and save models
     print "Model Training has began"
