@@ -10,6 +10,7 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.ensemble import AdaBoostClassifier, AdaBoostRegressor
 from sklearn.externals import joblib
 import pylab as plt
+from skimage.filters import sobel
 
 if __name__ == '__main__':
 
@@ -62,6 +63,8 @@ if __name__ == '__main__':
             for i in range(0, n-h, shift):
                 for j in range(0, m-w, shift):
                     cropped = im[i:i+h, j:j+w]
+                    cropped = sobel(cropped)
+                    cropped = cv2.normalize(cropped, None, 0, 255, cv2.NORM_MINMAX)
                     features = hog(cropped, orientations=hogOrientation,  pixels_per_cell=hogPixelPerCell, cells_per_block=hogCellsPerBlock, visualise=False)
                     features = features.reshape(1, len(features)) #reshape to 2D array
                     prediction = SVMclf.predict(features)
@@ -70,9 +73,19 @@ if __name__ == '__main__':
                     print regression
                     detectImageclf[i:i+h, j:j+w]+=prediction
                     detectImagereg[i:i+h, j:j+w]+=regression
-            cv2.imshow("Original Image", im)
+            fig = plt.figure()
+            a=fig.add_subplot(1,3,1)
+            a.set_title('Original')
+            plt.imshow(im, cmap='Greys_r')
+            
+            a=fig.add_subplot(1,3,2)
+            a.set_title('Clasificador')
             plt.imshow(detectImageclf)
+            
+            a=fig.add_subplot(1,3,3)
+            a.set_title('Regresor')
             plt.imshow(detectImagereg)
+            
             plt.show()
             cv2.waitKey(0)
                     

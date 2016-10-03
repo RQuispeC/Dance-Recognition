@@ -11,6 +11,7 @@ from sklearn.svm import SVC, SVR
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.ensemble import AdaBoostClassifier, AdaBoostRegressor
 from sklearn.externals import joblib
+from skimage.filters import sobel
 
 def getPercentage(fileName):
     fileName = fileName[fileName.find("_")+1:]
@@ -22,6 +23,12 @@ def getClass(percentage, classNumber):
         percentage-=1
     div = 100//classNumber
     return percentage//div
+
+def getBinaryClass(percentage, threshold):
+    if(percentage>=threshold):
+        return 1
+    return 0
+    
 def makeClean(training_names, train_path):
     for name in training_names:
         imagePath = os.path.join(train_path, name)
@@ -54,10 +61,11 @@ if __name__ == '__main__':
     
     #makeClean(training_names, train_path)
     # Extract HOG features and set labels 
-    classNumber = 5
+    classNumber = 2
     hogCellsPerBlock = (2, 2)
     hogPixelPerCell = (9, 9)    
     hogOrientation = 9
+    threshold = 50
     cnt = np.zeros(classNumber)
     featureList = []
     labelList = []
@@ -70,7 +78,7 @@ if __name__ == '__main__':
     tmp_path =os.path.basename(os.path.normpath(models_path))
     models_path = train_path[:models_path.find(tmp_path)]
     
-    directory = os.path.join(models_path, "models/" + patches_matadata + "_trained_" + str(classNumber) + "_" + str(hogOrientation) + "_" + str(hogCellsPerBlock) + "_" + str(hogPixelPerCell))
+    directory = os.path.join(models_path, "models/" + patches_matadata + "_trained_" + str(classNumber) + "_" + str(hogOrientation) + "_" + str(hogCellsPerBlock) + "_" + str(hogPixelPerCell)+"_sobelFilter_"+str(threshold))
     print "Data will be saved in: ", directory
     if not os.path.exists(directory):
             os.makedirs(directory)
@@ -81,14 +89,16 @@ if __name__ == '__main__':
     np.random.shuffle(tmpTraining_names) 
     training_names = []
     for name in tmpTraining_names:
-        classID = getClass(int(getPercentage(name)), classNumber)
+        #classID = getClass(int(getPercentage(name)), classNumber)
+        classID = getBinaryClass(int(getPercentage(name)), threshold)
         cnt[classID]+=1
     print "initial class number"
     print cnt
     lim = min(cnt)
     cnt = np.zeros(classNumber)
     for name in tmpTraining_names:
-        classID = getClass(int(getPercentage(name)), classNumber)
+        #classID = getClass(int(getPercentage(name)), classNumber)
+        classID = getBinaryClass(int(getPercentage(name)), threshold)
         if(cnt[classID]<lim):
             training_names.append(name)
             cnt[classID]+=1
@@ -97,10 +107,13 @@ if __name__ == '__main__':
     print "extracting features"
     cnt = np.zeros(classNumber)
     for name in training_names:
-        classID = getClass(int(getPercentage(name)), classNumber)
+        #classID = getClass(int(getPercentage(name)), classNumber)
+        classID = getBinaryClass(int(getPercentage(name)), threshold)
         imagePath = os.path.join(train_path, name)
-        im = cv2.imread(imagePath)
-        im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+        im = cv2.imread(imagePath, False)
+        im = sobel(im)
+        im = cv2.normalize(im, None, 0, 255, cv2.NORM_MINMAX)
+        #im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
         features = hog(im, orientations=hogOrientation,  pixels_per_cell=hogPixelPerCell, cells_per_block=hogCellsPerBlock, visualise=False)
         featureList.append(features)
         labelList.append(classID)
