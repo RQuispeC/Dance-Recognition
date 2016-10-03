@@ -65,7 +65,7 @@ if __name__ == '__main__':
     hogCellsPerBlock = (2, 2)
     hogPixelPerCell = (9, 9)    
     hogOrientation = 9
-    threshold = 50
+    threshold = 80
     cnt = np.zeros(classNumber)
     featureList = []
     labelList = []
@@ -111,8 +111,8 @@ if __name__ == '__main__':
         classID = getBinaryClass(int(getPercentage(name)), threshold)
         imagePath = os.path.join(train_path, name)
         im = cv2.imread(imagePath, False)
-        im = sobel(im)
-        im = cv2.normalize(im, None, 0, 255, cv2.NORM_MINMAX)
+        #im = sobel(im)
+        #im = cv2.normalize(im, None, 0, 255, cv2.NORM_MINMAX)
         #im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
         features = hog(im, orientations=hogOrientation,  pixels_per_cell=hogPixelPerCell, cells_per_block=hogCellsPerBlock, visualise=False)
         featureList.append(features)

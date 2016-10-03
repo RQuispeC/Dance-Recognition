@@ -2,6 +2,8 @@ import argparse as ap
 import cv2
 import numpy as np
 import os
+from skimage.filters import sobel
+
 def getRGBpath(rgb_path, image_name):
     i = image_name.find("bin")
     image_name= image_name[:i] + "rgb" + image_name[i+3:];
@@ -57,7 +59,9 @@ if __name__ == '__main__':
         #read images
         image_path = os.path.join(bin_path, name)
         bin_im_or = cv2.imread(image_path)
-        rgb_im_or = cv2.imread(getRGBpath(rgb_path, name))       
+        rgb_im_or = cv2.imread(getRGBpath(rgb_path, name), False)
+        rgb_im_or = sobel(rgb_im_or)
+        rgb_im_or = cv2.normalize(rgb_im_or, None, 0, 255, cv2.NORM_MINMAX)
         print name
         print bin_im_or.shape[:2]
         print rgb_im_or.shape[:2]
@@ -68,7 +72,7 @@ if __name__ == '__main__':
         shift = 20
         tmp_path =os.path.basename(os.path.normpath(train_path))
         patches_path = train_path[:train_path.find(tmp_path)]
-        directory = os.path.join(patches_path, "patches/"+str(pyr_hight)+"_"+str(h)+"_"+str(w)+"_"+str(shift))
+        directory = os.path.join(patches_path, "patches/"+str(pyr_hight)+"_"+str(h)+"_"+str(w)+"_"+str(shift)+"_sobel")
         print directory
         if not os.path.exists(directory):
             os.makedirs(directory)

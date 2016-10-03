@@ -36,7 +36,7 @@ if __name__ == '__main__':
     #recover training metadata
     w, h = 50, 50
     pyr_hight = 3
-    shift = 20
+    shift = 5
     
     classNumber = 5
     hogCellsPerBlock = (2, 2)
@@ -47,7 +47,9 @@ if __name__ == '__main__':
     for name in training_names:
         image_path = os.path.join(test_path, name)
         im_or = cv2.imread(image_path)
-        im_or = cv2.cvtColor(im_or, cv2.COLOR_BGR2GRAY)
+        im_or = sobel(im_or)
+        im_or = cv2.normalize(im_or, None, 0, 255, cv2.NORM_MINMAX)
+        #im_or = cv2.cvtColor(im_or, cv2.COLOR_BGR2GRAY)
         for k in range(pyr_hight):
             im = cv2.resize(im_or, (0,0), fx = 1.0/(k+1), fy = 1/(k+1.0));
             print name
@@ -63,8 +65,6 @@ if __name__ == '__main__':
             for i in range(0, n-h, shift):
                 for j in range(0, m-w, shift):
                     cropped = im[i:i+h, j:j+w]
-                    cropped = sobel(cropped)
-                    cropped = cv2.normalize(cropped, None, 0, 255, cv2.NORM_MINMAX)
                     features = hog(cropped, orientations=hogOrientation,  pixels_per_cell=hogPixelPerCell, cells_per_block=hogCellsPerBlock, visualise=False)
                     features = features.reshape(1, len(features)) #reshape to 2D array
                     prediction = SVMclf.predict(features)
