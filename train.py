@@ -65,7 +65,7 @@ if __name__ == '__main__':
     hogCellsPerBlock = (2, 2)
     hogPixelPerCell = (9, 9)    
     hogOrientation = 9
-    threshold = 80
+    threshold = 90
     cnt = np.zeros(classNumber)
     featureList = []
     labelList = []

@@ -36,7 +36,7 @@ if __name__ == '__main__':
     #recover training metadata
     w, h = 50, 50
     pyr_hight = 3
-    shift = 5
+    shift = 1
     
     classNumber = 5
     hogCellsPerBlock = (2, 2)
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     #process images
     for name in training_names:
         image_path = os.path.join(test_path, name)
-        im_or = cv2.imread(image_path)
+        im_or = cv2.imread(image_path, False)
         im_or = sobel(im_or)
         im_or = cv2.normalize(im_or, None, 0, 255, cv2.NORM_MINMAX)
         #im_or = cv2.cvtColor(im_or, cv2.COLOR_BGR2GRAY)
@@ -62,29 +62,36 @@ if __name__ == '__main__':
                 continue
             detectImageclf = np.zeros((n, m))
             detectImagereg = np.zeros((n, m))
+            detectImage = np.zeros((n, m))
             for i in range(0, n-h, shift):
                 for j in range(0, m-w, shift):
                     cropped = im[i:i+h, j:j+w]
                     features = hog(cropped, orientations=hogOrientation,  pixels_per_cell=hogPixelPerCell, cells_per_block=hogCellsPerBlock, visualise=False)
                     features = features.reshape(1, len(features)) #reshape to 2D array
+                    
                     prediction = SVMclf.predict(features)
+                    detectImage[i, j] = prediction
                     print prediction
                     regression = SVMreg.predict(features)
                     print regression
                     detectImageclf[i:i+h, j:j+w]+=prediction
                     detectImagereg[i:i+h, j:j+w]+=regression
             fig = plt.figure()
-            a=fig.add_subplot(1,3,1)
+            a=fig.add_subplot(1,4,1)
             a.set_title('Original')
             plt.imshow(im, cmap='Greys_r')
             
-            a=fig.add_subplot(1,3,2)
+            a=fig.add_subplot(1,4,2)
             a.set_title('Clasificador')
             plt.imshow(detectImageclf)
             
-            a=fig.add_subplot(1,3,3)
+            a=fig.add_subplot(1,4,3)
             a.set_title('Regresor')
             plt.imshow(detectImagereg)
+            
+            a=fig.add_subplot(1,4,4)
+            a.set_title('detect')
+            plt.imshow(detectImage)
             
             plt.show()
             cv2.waitKey(0)
