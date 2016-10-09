@@ -179,7 +179,7 @@ if __name__ == '__main__':
     params_classifier = dict(n_estimators = 150)
 
     #create directory to save models
-    directory = createDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber, threshold, classifier + '_'.join(np.array([[k, v] for k, v in zip(params_classifier.keys(), params_classifier.values())]).flatten()))
+    directory = createDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber, threshold, classifier + '_' + '_'.join(np.array([[k, v] for k, v in zip(params_classifier.keys(), params_classifier.values())]).flatten()))
 
     #balance size of classes
     training_names = balanceClasses(training_names, classNumber, threshold)
@@ -188,4 +188,4 @@ if __name__ == '__main__':
     featureList, labelList = extractFeatures(train_path, training_names, classNumber, threshold, hogPixelPerCell, hogCellsPerBlock, hogOrientation)
 
     #train and save models
-    trainModels(featureList, labelList, directory, 0, 0, 0, 0, 1, 1)
+    trainModels(featureList, labelList, directory, classifier, params_classifier)
