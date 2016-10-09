@@ -33,7 +33,7 @@ def recoverMetadata(models_path):
     myMetadata = models_path.split('_')
     return myMetadata[4] == "sobel", int(myMetadata[0]), int(myMetadata[1]), int(myMetadata[2]), tuple(map(int, regex.findall(r'\d+', myMetadata[8]))), tuple(map(int, regex.findall(r'\d+', myMetadata[9]))), int(myMetadata[7])
 
-def runTest(clf, reg, test_path, training_names, useSobel = True, pyr_hight = 3, h = 50, w = 50, hogPixelPerCell = (9, 9), hogCellsPerBlock  = (2, 2), hogOrientation = 9):
+def runTest(clf, reg, test_path, training_names, useSobel = True, pyr_hight = 3, h = 50, w = 50, params_hog = dict(orientations = 9, pixels_per_cell = (9, 9), cells_per_block = (2, 2))):
     print "Parameters are: "
     print useSobel, pyr_hight, h, w, hogPixelPerCell, hogCellsPerBlock, hogOrientation
 
@@ -43,8 +43,6 @@ def runTest(clf, reg, test_path, training_names, useSobel = True, pyr_hight = 3,
         if(useSobel):
             im_or = sobel(im_or)
             im_or = cv2.normalize(im_or, None, 0, 255, cv2.NORM_MINMAX)
-        else:
-            im_or = cv2.cvtColor(im_or, cv2.COLOR_BGR2GRAY)
         print name
         for k in range(pyr_hight):
             im = cv2.resize(im_or, (0,0), fx = 1.0/(k+1.0), fy = 1.0/(k+1.0))
@@ -58,7 +56,7 @@ def runTest(clf, reg, test_path, training_names, useSobel = True, pyr_hight = 3,
             for i in range(0, n-h, shift):
                 for j in range(0, m-w, shift):
                     cropped = im[i:i+h, j:j+w]
-                    features = hog(cropped, orientations=hogOrientation,  pixels_per_cell=hogPixelPerCell, cells_per_block=hogCellsPerBlock, visualise=False)
+                    features = hog(cropped, **params_hog)
                     features = features.reshape(1, len(features)) #reshape to 2D array
                     prediction = clf.predict(features)
                     #detectImage[i, j] = prediction
@@ -106,4 +104,4 @@ if __name__ == '__main__':
     shift = 5 #shift of sliding windows in test
 
     #process images
-    runTest(clf, reg, test_path, training_names, useSobel, pyr_hight, h, w, hogPixelPerCell, hogCellsPerBlock, hogOrientation)
+    runTest(clf, reg, test_path, training_names, useSobel, pyr_hight, h, w, dict(orientation = hogOrientation, pixels_per_cell = hogPixelPerCell, cells_per_block = hogCellsPerBlock))
