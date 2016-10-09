@@ -171,7 +171,7 @@ def trainModels(featureList, labelList, directory = "", useSVMclf = True, useSVM
         print "ForestRegressor has been saved"
 
     if(useADABOOSTclf):
-        ADAclasifier = ensemble.AdaBoostClassifier(n_estimators = 50)
+        ADAclasifier = ensemble.AdaBoostClassifier(n_estimators = 150)
         print "Model Training has began"
         ADAclasifier.fit(featureList, labelList)
         print "saving model ..."
@@ -179,7 +179,7 @@ def trainModels(featureList, labelList, directory = "", useSVMclf = True, useSVM
         print "ADAclasifier has been saved"
 
     if(useADABOOSTreg):
-        ADAregressor = ensemble.AdaBoostRegressor(n_estimators = 50)
+        ADAregressor = ensemble.AdaBoostRegressor(n_estimators = 150)
         print "Model Training has began"
         ADAregressor.fit(featureList, labelList)
         print "saving model ..."
@@ -205,7 +205,7 @@ if __name__ == '__main__':
     binaryClass = True
 
     #create directory to save models
-    directory = createDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber, threshold, "adaBoost_50")
+    directory = createDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber, threshold, "adaBoost_150")
 
     #balance size of classes
     training_names = balanceClasses(training_names, classNumber, threshold)

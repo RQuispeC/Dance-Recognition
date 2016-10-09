@@ -30,39 +30,42 @@ def loadModels(models_path, useSVMclf = True, useSVMreg = True, useRANDOMFORESTc
 
     if(useRANDOMFORESTclf):
         print "Loading ForestClassifier classsifier"
-        ForestClassifier = joblib.load(os.path.join(directory, "ForestClassifier.pkl"))
+        ForestClassifier = joblib.load(os.path.join(models_path, "ForestClassifier.pkl"))
         print "ForestClassifier has been saved"
     else:
         ForestClassifier = None
 
     if(useRANDOMFORESTreg):
         print "Loading ForestRegressor regressor"
-        ForestRegressor = joblib.load(os.path.join(directory, "ForestRegressor.pkl"))
+        ForestRegressor = joblib.load(os.path.join(models_path, "ForestRegressor.pkl"))
         print "ForestRegressor has been saved"
     else:
         ForestRegressor = None
 
     if(useADABOOSTclf):
-        print "Loading ADAclasifier classsifier"
-        ADAclassifier = joblib.load(os.path.join(directory, "ADAclasifier.pkl"))
+        print "Loading ADAboost classsifier"
+        ADAclassifier = joblib.load(os.path.join(models_path, "ADAclasifier.pkl"))
         print "ADAclasifier has been saved"
     else:
         ADAclassifier = None
 
     if(useADABOOSTreg):
-        print "Loading ADAregressor regressor"
-        ADAregressor  = joblib.load(os.path.join(directory, "ADAregressor.pkl"))
+        print "Loading ADAboost regressor"
+        ADAregressor  = joblib.load(os.path.join(models_path, "ADAregressor.pkl"))
         print "ADAregressor has been saved"
     else:
         ADAregressor = None
-    return SVMclf, SVMreg #, ForestClassifier, ForestRegressor , ADAclassifier, ADAregressor
+
+    #return SVMclf, SVMreg
+    #return ForestClassifier, ForestRegressor
+    return ADAclassifier, ADAregressor
 
 def recoverMetadata(models_path):
     models_path =  os.path.basename(os.path.normpath(models_path))
     myMetadata = models_path.split('_')
     return myMetadata[4] == "sobel", int(myMetadata[0]), int(myMetadata[1]), int(myMetadata[2]), tuple(map(int, regex.findall(r'\d+', myMetadata[8]))), tuple(map(int, regex.findall(r'\d+', myMetadata[9]))), int(myMetadata[7])
 
-def runTest(SVMclf, SVMreg, test_path, training_names, useSobel = True, pyr_hight = 3, h = 50, w = 50, hogPixelPerCell = (9, 9), hogCellsPerBlock  = (2, 2), hogOrientation = 9):
+def runTest(clf, reg, test_path, training_names, useSobel = True, pyr_hight = 3, h = 50, w = 50, hogPixelPerCell = (9, 9), hogCellsPerBlock  = (2, 2), hogOrientation = 9):
     print "Parameters are: "
     print useSobel, pyr_hight, h, w, hogPixelPerCell, hogCellsPerBlock, hogOrientation
 
@@ -76,7 +79,7 @@ def runTest(SVMclf, SVMreg, test_path, training_names, useSobel = True, pyr_high
             im_or = cv2.cvtColor(im_or, cv2.COLOR_BGR2GRAY)
         print name
         for k in range(pyr_hight):
-            im = cv2.resize(im_or, (0,0), fx = 1.0/(k+10.0), fy = 1.0/(k+10.0))
+            im = cv2.resize(im_or, (0,0), fx = 1.0/(k+1.0), fy = 1.0/(k+1.0))
             print "Factor : ", k+1
             n, m = im.shape[:2]
             if(n<h or m<w):
@@ -89,9 +92,9 @@ def runTest(SVMclf, SVMreg, test_path, training_names, useSobel = True, pyr_high
                     cropped = im[i:i+h, j:j+w]
                     features = hog(cropped, orientations=hogOrientation,  pixels_per_cell=hogPixelPerCell, cells_per_block=hogCellsPerBlock, visualise=False)
                     features = features.reshape(1, len(features)) #reshape to 2D array
-                    prediction = SVMclf.predict(features)
+                    prediction = clf.predict(features)
                     #detectImage[i, j] = prediction
-                    regression = SVMreg.predict(features)
+                    regression = reg.predict(features)
                     if((i*j)%50000 == 0 and i>0 and j > 0 ):
                         print "Detecting face"
                     detectImageclf[i:i+h, j:j+w]+=prediction
@@ -128,11 +131,11 @@ if __name__ == '__main__':
     training_names = os.listdir(test_path)
     models_path = args["modelsTrained"]
 
-    SVMclf, SVMreg = loadModels(models_path)
+    clf, reg = loadModels(models_path, 0, 0, 0, 0, 1, 1)
 
     #recover training metadata
     useSobel, pyr_hight, h, w, hogCellsPerBlock,  hogPixelPerCell, hogOrientation = recoverMetadata(models_path)
     shift = 5 #shift of sliding windows in test
 
     #process images
-    runTest(SVMclf, SVMreg, test_path, training_names, useSobel, pyr_hight, h, w, hogPixelPerCell, hogCellsPerBlock, hogOrientation)
+    runTest(clf, reg, test_path, training_names, useSobel, pyr_hight, h, w, hogPixelPerCell, hogCellsPerBlock, hogOrientation)

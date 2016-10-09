@@ -40,14 +40,16 @@ def createAcumulative(bin_im):
                 ac_sum[i][j] = ac_sum[i-1][j] + ac_sum[i][j-1] - ac_sum[i-1][j-1] + bit;
     return ac_sum
 
-def getLabelsByPercentage(train_path, training_names, bin_path, rgb_path, w = 50, h = 50, pyr_hight = 3, shift = 20, useSobel = True):
+def getLabelsByPercentage(train_path, training_names, bin_path, rgb_path, w = 50, h = 50, pyr_hight = 3, shift = 20, useSobel = True, fileData = ""):
     sob = ""
     if(useSobel):
         sob = "_sobel"
+    if(fileData != ""):
+        fileData = "_" + fileData
     #create a directory
     tmp_path =os.path.basename(os.path.normpath(train_path))
     patches_path = train_path[:train_path.find(tmp_path)]
-    directory = os.path.join(patches_path, "patches/"+str(pyr_hight)+"_"+str(h)+"_"+str(w)+"_"+str(shift)+sob)
+    directory = os.path.join(patches_path, "patches/"+str(pyr_hight)+"_"+str(h)+"_"+str(w)+"_"+str(shift)+sob = fileData)
     print directory
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -120,5 +122,5 @@ if __name__ == '__main__':
     useSobel =True
 
     #create label
-    getLabelsByPercentage(train_path, training_names, bin_path, rgb_path)
-    #getLabelsByPercentage(train_path, training_names, bin_path, rgb_path, w, h, pyr_hight, shift, useSobel)
+    #getLabelsByPercentage(train_path, training_names, bin_path, rgb_path)
+    getLabelsByPercentage(train_path, training_names, bin_path, rgb_path, w, h, pyr_hight, shift, useSobel, "chuncho")
