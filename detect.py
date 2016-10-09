@@ -22,7 +22,7 @@ def loadModels(models_path, classifier='SVC'):
     for clf_name in classifier:
       print "Loading " + clf_name
       clf.append(joblib.load(os.path.join(models_path, clf_name + ".pkl")))
-      print clf_name + " loaded sucessfully"
+      print clf_name + " loaded successfully"
 
     if len(clf) == 1:
       return clf[0]
