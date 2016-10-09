@@ -155,7 +155,7 @@ def trainModels(featureList, labelList, directory = "", classifier = 'SVC', para
     print "Model training has begun"
     clf.fit(featureLest, labelList)
     print "saving model ..."
-    joblib.dump(clf, os.path.join(directory, classifier + "classifier.pkl"))
+    joblib.dump(clf, os.path.join(directory, classifier + ".pkl"))
     print classifier + "classifier has been saved"
 
 if __name__ == '__main__':
