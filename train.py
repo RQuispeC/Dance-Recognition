@@ -137,54 +137,26 @@ def extractFeatures(train_path, training_names, classNumber = 2, threshold = 40,
     print cnt
     return featureList, labelList
 
-def trainModels(featureList, labelList, directory = "", useSVMclf = True, useSVMreg = True, useRANDOMFORESTclf = False, useRANDOMFORESTreg = False, useADABOOSTclf = False, useADABOOSTreg = False):
-    if(useSVMclf):
-        SVMclf = svm.SVC(C = 1000, kernel='rbf', gamma = 0.001)
-        print "Model Training has began"
-        SVMclf.fit(featureList, labelList)
-        print "saving model ..."
-        joblib.dump(SVMclf, os.path.join(directory, "SVMclassifier.pkl"))
-        print "SVMclassifier has been saved"
+def trainModels(featureList, labelList, directory = "", classifier = 'SVC', params_classifier = dict(C=100, kernel='rbf', gamma=0.001)):
+    type_classifier = dict(
+        SVC = svm.SVC,
+        SVR = svm.SVR,
+        RandomForestClassifier = ensemble.RandomForestClassifier,
+        RandomForestRegressor = ensemble.RandomForestRegressor,
+        AdaClassifier = ensemble.AdaBoostClassifier,
+        AdaRegressor = ensemble.AdaBoostRegressor,
+    )
 
-    if(useSVMreg):
-        SVMrgr = svm.SVR(C = 1000, kernel='rbf', gamma = 0.001)
-        print "Model Training has began"
-        SVMrgr.fit(featureList, labelList)
-        print "saving model ..."
-        joblib.dump(SVMrgr, os.path.join(directory, "SVMregressor.pkl"))
-        print "SVMregressor has been saved"
+    if not type_classifier.has_key(classifier):
+      print "Invalid classifier. Please provide one of these:"
+        print type_classifier.keys()
 
-    if(useRANDOMFORESTclf):
-        ForestClassifier = ensemble.RandomForestClassifier()
-        print "Model Training has began"
-        ForestClassifier.fit(featureList, labelList)
-        print "saving model ..."
-        joblib.dump(ForestClassifier, os.path.join(directory, "ForestClassifier.pkl"))
-        print "ForestClassifier has been saved"
-
-    if(useRANDOMFORESTreg):
-        ForestRegressor = ensemble.RandomForestRegressor()
-        print "Model Training has began"
-        ForestRegressor.fit(featureList, labelList)
-        print "saving model ..."
-        joblib.dump(ForestRegressor, os.path.join(directory, "ForestRegressor.pkl"))
-        print "ForestRegressor has been saved"
-
-    if(useADABOOSTclf):
-        ADAclasifier = ensemble.AdaBoostClassifier(n_estimators = 150)
-        print "Model Training has began"
-        ADAclasifier.fit(featureList, labelList)
-        print "saving model ..."
-        joblib.dump(ADAclasifier, os.path.join(directory, "ADAclasifier.pkl"))
-        print "ADAclasifier has been saved"
-
-    if(useADABOOSTreg):
-        ADAregressor = ensemble.AdaBoostRegressor(n_estimators = 150)
-        print "Model Training has began"
-        ADAregressor.fit(featureList, labelList)
-        print "saving model ..."
-        joblib.dump(ADAregressor, os.path.join(directory, "ADAregressor.pkl"))
-        print "ADAregressor has been saved"
+    clf = type_classifier[classifier](**params_classifier)
+    print "Model training has begun"
+    clf.fit(featureLest, labelList)
+    print "saving model ..."
+    joblib.dump(clf, os.path.join(directory, classifier + "classifier.pkl"))
+    print classifier + "classifier has been saved"
 
 if __name__ == '__main__':
     # Get the path of the training set
@@ -203,9 +175,11 @@ if __name__ == '__main__':
     hogOrientation = 9
     threshold = 40 # set this parameter if classNumber = 2
     binaryClass = True
+    classifier = 'AdaClassifier'
+    params_classifier = dict(n_estimators = 150)
 
     #create directory to save models
-    directory = createDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber, threshold, "adaBoost_150")
+    directory = createDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber, threshold, classifier + '_' + '_'.join(np.array([[k, v] for k, v in zip(params_classifier.keys(), params_classifier.values())]).flatten()))
 
     #balance size of classes
     training_names = balanceClasses(training_names, classNumber, threshold)
@@ -214,5 +188,4 @@ if __name__ == '__main__':
     featureList, labelList = extractFeatures(train_path, training_names, classNumber, threshold, hogPixelPerCell, hogCellsPerBlock, hogOrientation)
 
     #train and save models
-    #trainModels(featureList, labelList, directory)
-    trainModels(featureList, labelList, directory, 0, 0, 0, 0, 1, 1)
+    trainModels(featureList, labelList, directory, classifier, params_classifier)
