@@ -13,52 +13,20 @@ from sklearn.externals import joblib
 import pylab as plt
 from skimage.filters import sobel
 
-def loadModels(models_path, useSVMclf = True, useSVMreg = True, useRANDOMFORESTclf = False, useRANDOMFORESTreg = False, useADABOOSTclf = False, useADABOOSTreg = False):
-    if(useSVMclf):
-        print "Loading SVM classsifier"
-        SVMclf = joblib.load(os.path.join(models_path, "SVMclassifier.pkl"))
-        print "SVM classsifier loaded"
-    else:
-        SVMclf = None
+def loadModels(models_path, classifier='SVC'):
+    # classifier can be a string or a list, in case of a string it returns one classifier, in case of
+    # list it returns a list of the corresponding models
+    if classifier.__type__ == 'str':
+      classifier = [classifier]
+    clf = []
+    for clf_name in classifier:
+      print "Loading " + clf_name
+      clf.append(joblib.load(os.path.join(models_path, clf_name + ".pkl")))
+      print clf_name + " loaded sucessfully"
 
-    if(useSVMreg):
-        print "Loading SVM regressor"
-        SVMreg = joblib.load(os.path.join(models_path, "SVMregressor.pkl"))
-        print "SVM regressor loaded"
-    else:
-        SVMreg = None
-
-    if(useRANDOMFORESTclf):
-        print "Loading ForestClassifier classsifier"
-        ForestClassifier = joblib.load(os.path.join(models_path, "ForestClassifier.pkl"))
-        print "ForestClassifier has been saved"
-    else:
-        ForestClassifier = None
-
-    if(useRANDOMFORESTreg):
-        print "Loading ForestRegressor regressor"
-        ForestRegressor = joblib.load(os.path.join(models_path, "ForestRegressor.pkl"))
-        print "ForestRegressor has been saved"
-    else:
-        ForestRegressor = None
-
-    if(useADABOOSTclf):
-        print "Loading ADAboost classsifier"
-        ADAclassifier = joblib.load(os.path.join(models_path, "ADAclasifier.pkl"))
-        print "ADAclasifier has been saved"
-    else:
-        ADAclassifier = None
-
-    if(useADABOOSTreg):
-        print "Loading ADAboost regressor"
-        ADAregressor  = joblib.load(os.path.join(models_path, "ADAregressor.pkl"))
-        print "ADAregressor has been saved"
-    else:
-        ADAregressor = None
-
-    #return SVMclf, SVMreg
-    #return ForestClassifier, ForestRegressor
-    return ADAclassifier, ADAregressor
+    if len(clf) == 1:
+      return clf[0]
+    return clf
 
 def recoverMetadata(models_path):
     models_path =  os.path.basename(os.path.normpath(models_path))
@@ -131,7 +99,7 @@ if __name__ == '__main__':
     training_names = os.listdir(test_path)
     models_path = args["modelsTrained"]
 
-    clf, reg = loadModels(models_path, 0, 0, 0, 0, 1, 1)
+    clf, reg = loadModels(models_path, ["AdaClassifier", "AdaRegressor"])
 
     #recover training metadata
     useSobel, pyr_hight, h, w, hogCellsPerBlock,  hogPixelPerCell, hogOrientation = recoverMetadata(models_path)
