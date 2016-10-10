@@ -44,6 +44,8 @@ def createDefaultDirectory(train_path = "", w = 50, h = 50, pyr_hight = 3, shift
     sob = ""
     if(useSobel):
         sob = "_sobel"
+    else:
+        sob = "_noSharper"
     #create a directory
     tmp_path =os.path.basename(os.path.normpath(train_path))
     patches_path = train_path[:train_path.find(tmp_path)]
@@ -57,6 +59,8 @@ def createDirectory(saveDirectory = "", w = 50, h = 50, pyr_hight = 3, shift = 2
     sob = ""
     if(useSobel):
         sob = "_sobel"
+    else:
+        sob = "_noSharper"    
     directory = os.path.join(saveDirectory,"patches/"+str(pyr_hight)+"_"+str(h)+"_"+str(w)+"_"+str(shift)+sob)
     print "Data will be saved in: ", directory
     if not os.path.exists(directory):
