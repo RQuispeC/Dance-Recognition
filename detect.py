@@ -49,13 +49,21 @@ def recoverMetadata(models_path):
     myMetadata = models_path.split('_')
     return myMetadata[4] == "sobel", int(myMetadata[0]), int(myMetadata[1]), int(myMetadata[2]), tuple(map(int, regex.findall(r'\d+', myMetadata[8]))), tuple(map(int, regex.findall(r'\d+', myMetadata[9]))), int(myMetadata[7])
 
-def createDirectory(models_path):
+def createDefaultDirectory(models_path):
     dirName =os.path.basename(os.path.normpath(models_path))
     models_path = models_path[:models_path.find(dirName)]
     tmp_path =os.path.basename(os.path.normpath(models_path))
     models_path = models_path[:models_path.find(tmp_path)]
 
     directory = os.path.join(models_path, "results/" + dirName)
+    print "Data will be saved in: ", directory
+    if not os.path.exists(directory):
+            os.makedirs(directory)
+    return directory
+
+def createDirectory(saveDirectory, models_path):
+    dirName =os.path.basename(os.path.normpath(models_path))
+    directory = os.path.join(saveDirectory, "results/" + dirName)
     print "Data will be saved in: ", directory
     if not os.path.exists(directory):
             os.makedirs(directory)
@@ -121,6 +129,7 @@ if __name__ == '__main__':
     parser = ap.ArgumentParser()
     parser.add_argument("-t", "--testingSet", help="Path to test dataset", required="True")
     parser.add_argument("-m", "--modelsTrained", help="Path to trained models", required="True")
+    parser.add_argument("-s", "--saveDirectory", help="Path where you want to save the results of the ")
     args = vars(parser.parse_args())
 
     # Get the training path to labeled dataset
@@ -136,7 +145,10 @@ if __name__ == '__main__':
     shift = 5 #shift of sliding windows in test
 
     #create directory file for results
-    directory = createDirectory(models_path)
+    if(args["saveDirectory"]):
+        directory = createDirectory(args["saveDirectory"], models_path)
+    else:
+        directory = createDefaultDirectory(models_path)
 
     #process images
     runTest(clf, reg, test_path, training_names, directory, useSobel, pyr_hight, h, w, dict(orientations = hogOrientation, pixels_per_cell = hogPixelPerCell, cells_per_block = hogCellsPerBlock))

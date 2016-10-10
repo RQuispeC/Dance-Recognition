@@ -65,7 +65,7 @@ def readFeatures(directory, classNumber = 5):
     tmpLabelList = []
     return featureList, labelList, percentageList, cnt
 
-def createDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber=2, threshold = 40, extraData = ""):
+def createDefaultDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber=2, threshold = 40, extraData = ""):
     if(classNumber != 2):
         threshold = ""
     else:
@@ -80,6 +80,22 @@ def createDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCel
     models_path = train_path[:models_path.find(tmp_path)]
 
     directory = os.path.join(models_path, "models/" + patches_matadata + "_trained_" + str(classNumber) + "_" + str(hogOrientation) + "_" + str(hogCellsPerBlock) + "_" + str(hogPixelPerCell)+threshold + extraData)
+    print "Data will be saved in: ", directory
+    if not os.path.exists(directory):
+            os.makedirs(directory)
+    return directory
+
+def createDirectory(saveDirectory, train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber=2, threshold = 40, extraData = ""):
+    if(classNumber != 2):
+        threshold = ""
+    else:
+        threshold = "_" + str(threshold)
+    if(extraData != ""):
+        extraData = "_" + extraData
+    #create directory to save models
+    patches_matadata =os.path.basename(os.path.normpath(train_path))
+
+    directory = os.path.join(saveDirectory, "models/" + patches_matadata + "_trained_" + str(classNumber) + "_" + str(hogOrientation) + "_" + str(hogCellsPerBlock) + "_" + str(hogPixelPerCell)+threshold + extraData)
     print "Data will be saved in: ", directory
     if not os.path.exists(directory):
             os.makedirs(directory)
@@ -176,6 +192,7 @@ if __name__ == '__main__':
     # Get the path of the training set
     parser = ap.ArgumentParser()
     parser.add_argument("-d", "--dataset", help="Path to train dataset", required="True")
+    parser.add_argument("-s", "--saveDirectory", help="Path where you want to save trained models and extracted features")
     args = vars(parser.parse_args())
 
     # Get the training path to labeled dataset
@@ -193,7 +210,10 @@ if __name__ == '__main__':
     params_model = dict(n_estimators = 150)
 
     #create directory to save models
-    directory = createDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber, threshold, model + '_' + '_'.join(np.array([[k, v] for k, v in zip(params_model.keys(), params_model.values())]).flatten()))
+    if(args["saveDirectory"]):
+        directory = createDirectory(args["saveDirectory"], train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber, threshold, model + '_' + '_'.join(np.array([[k, v] for k, v in zip(params_model.keys(), params_model.values())]).flatten()))
+    else:
+        directory = createDefaultDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber, threshold, model + '_' + '_'.join(np.array([[k, v] for k, v in zip(params_model.keys(), params_model.values())]).flatten()))
 
     #balance size of classes
     training_names = balanceClasses(training_names, classNumber, threshold)
