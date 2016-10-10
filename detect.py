@@ -49,7 +49,19 @@ def recoverMetadata(models_path):
     myMetadata = models_path.split('_')
     return myMetadata[4] == "sobel", int(myMetadata[0]), int(myMetadata[1]), int(myMetadata[2]), tuple(map(int, regex.findall(r'\d+', myMetadata[8]))), tuple(map(int, regex.findall(r'\d+', myMetadata[9]))), int(myMetadata[7])
 
-def runTest(clf, reg, test_path, training_names, useSobel = True, pyr_hight = 3, h = 50, w = 50, params_hog = dict(orientations = 9, pixels_per_cell = (9, 9), cells_per_block = (2, 2))):
+def createDirectory(models_path):
+    dirName =os.path.basename(os.path.normpath(models_path))
+    models_path = models_path[:models_path.find(dirName)]
+    tmp_path =os.path.basename(os.path.normpath(models_path))
+    models_path = models_path[:models_path.find(tmp_path)]
+
+    directory = os.path.join(models_path, "results/" + dirName)
+    print "Data will be saved in: ", directory
+    if not os.path.exists(directory):
+            os.makedirs(directory)
+    return directory
+
+def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = True, pyr_hight = 3, h = 50, w = 50, params_hog = dict(orientations = 9, pixels_per_cell = (9, 9), cells_per_block = (2, 2))):
     print "Parameters are: "
     print useSobel, pyr_hight, h, w, hogPixelPerCell, hogCellsPerBlock, hogOrientation
 
@@ -101,6 +113,7 @@ def runTest(clf, reg, test_path, training_names, useSobel = True, pyr_hight = 3,
             plt.imshow(detectImage)
             '''
             plt.show()
+            fig.savefig(os.path.join(saveDirectory, name[:name.rfind(".")] + "_" + str(k+1) + ".jpg"), bbox_inches='tight')
 
 if __name__ == '__main__':
 
@@ -122,5 +135,8 @@ if __name__ == '__main__':
     useSobel, pyr_hight, h, w, hogCellsPerBlock,  hogPixelPerCell, hogOrientation = recoverMetadata(models_path)
     shift = 5 #shift of sliding windows in test
 
+    #create directory file for results
+    directory = createDirectory(models_path)
+
     #process images
-    runTest(clf, reg, test_path, training_names, useSobel, pyr_hight, h, w, dict(orientations = hogOrientation, pixels_per_cell = hogPixelPerCell, cells_per_block = hogCellsPerBlock))
+    runTest(clf, reg, test_path, training_names, directory, useSobel, pyr_hight, h, w, dict(orientations = hogOrientation, pixels_per_cell = hogPixelPerCell, cells_per_block = hogCellsPerBlock))
