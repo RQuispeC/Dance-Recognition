@@ -60,7 +60,7 @@ def createDirectory(saveDirectory = "", w = 50, h = 50, pyr_hight = 3, shift = 2
     if(useSobel):
         sob = "_sobel"
     else:
-        sob = "_noSharper"    
+        sob = "_noSharper"
     directory = os.path.join(saveDirectory,"patches/"+str(pyr_hight)+"_"+str(h)+"_"+str(w)+"_"+str(shift)+sob)
     print "Data will be saved in: ", directory
     if not os.path.exists(directory):
@@ -73,11 +73,12 @@ def getLabelsByPercentage(train_path, training_names, directory,  bin_path, rgb_
         #read images
         image_path = os.path.join(bin_path, name)
         bin_im_or = cv2.imread(image_path)
-        rgb_im_or = cv2.imread(getRGBpath(rgb_path, name), False)
         if(useSobel):
+            rgb_im_or = cv2.imread(getRGBpath(rgb_path, name), False)
             rgb_im_or = sobel(rgb_im_or)
             rgb_im_or = cv2.normalize(rgb_im_or, None, 0, 255, cv2.NORM_MINMAX)
         else:
+            rgb_im_or = cv2.imread(getRGBpath(rgb_path, name))
             rgb_im_or = cv2.cvtColor(rgb_im_or, cv2.COLOR_BGR2GRAY)
         print name
         print bin_im_or.shape[:2]

@@ -75,11 +75,12 @@ def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = 
 
     for name in training_names:
         image_path = os.path.join(test_path, name)
-        im_or = cv2.imread(image_path, False)
         if(useSobel):
+            im_or = cv2.imread(image_path, False)
             im_or = sobel(im_or)
             im_or = cv2.normalize(im_or, None, 0, 255, cv2.NORM_MINMAX)
         else:
+            im_or = cv2.imread(image_path)
             im_or = cv2.cvtColor(im_or, cv2.COLOR_BGR2GRAY)
         print name
         for k in range(pyr_hight):
