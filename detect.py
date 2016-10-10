@@ -13,20 +13,36 @@ from sklearn.externals import joblib
 import pylab as plt
 from skimage.filters import sobel
 
-def loadModels(models_path, classifier='SVC'):
-    # classifier can be a string or a list, in case of a string it returns one classifier, in case of
-    # list it returns a list of the corresponding models
-    if classifier.__type__ == 'str':
-      classifier = [classifier]
-    clf = []
-    for clf_name in classifier:
-      print "Loading " + clf_name
-      clf.append(joblib.load(os.path.join(models_path, clf_name + ".pkl")))
-      print clf_name + " loaded successfully"
+def loadModels(models_path, model='SVC'):
+    type_classifier = dict(
+        SVM = svm.SVC,
+        RandomForest = ensemble.RandomForestClassifier,
+        AdaBoost = ensemble.AdaBoostClassifier,
+    )
 
-    if len(clf) == 1:
-      return clf[0]
-    return clf
+    type_regressor = dict(
+        SVM = svm.SVR,
+        RandomForest = ensemble.RandomForestRegressor,
+        AdaBoost = ensemble.AdaBoostRegressor,
+    )
+
+    if not type_classifier.has_key(model):
+        print "Invalid classifier. Please provide one of these:"
+        print type_classifier.keys()
+
+    if not type_regressor.has_key(model):
+        print "Invalid regressor. Please provide one of these:"
+        print type_regressor.keys()
+
+    print "Loading " + model + " classsifier ..."
+    clf = joblib.load(os.path.join(models_path, model + "Classifier.pkl"))
+    print model + " classifier loaded successfully"
+
+    print "Loading " + model + " regressor ..."
+    reg = joblib.load(os.path.join(models_path, model + "Regressor.pkl"))
+    print model + " regressor loaded successfully"
+
+    return clf, reg
 
 def recoverMetadata(models_path):
     models_path =  os.path.basename(os.path.normpath(models_path))
@@ -43,6 +59,8 @@ def runTest(clf, reg, test_path, training_names, useSobel = True, pyr_hight = 3,
         if(useSobel):
             im_or = sobel(im_or)
             im_or = cv2.normalize(im_or, None, 0, 255, cv2.NORM_MINMAX)
+        else:
+            im_or = cv2.cvtColor(im_or, cv2.COLOR_BGR2GRAY)
         print name
         for k in range(pyr_hight):
             im = cv2.resize(im_or, (0,0), fx = 1.0/(k+1.0), fy = 1.0/(k+1.0))
@@ -96,12 +114,13 @@ if __name__ == '__main__':
     test_path = args["testingSet"]
     training_names = os.listdir(test_path)
     models_path = args["modelsTrained"]
+    model_name = 'AdaBoost'
 
-    clf, reg = loadModels(models_path, ["AdaClassifier", "AdaRegressor"])
+    clf, reg = loadModels(models_path, model_name)
 
     #recover training metadata
     useSobel, pyr_hight, h, w, hogCellsPerBlock,  hogPixelPerCell, hogOrientation = recoverMetadata(models_path)
     shift = 5 #shift of sliding windows in test
 
     #process images
-    runTest(clf, reg, test_path, training_names, useSobel, pyr_hight, h, w, dict(orientation = hogOrientation, pixels_per_cell = hogPixelPerCell, cells_per_block = hogCellsPerBlock))
+    runTest(clf, reg, test_path, training_names, useSobel, pyr_hight, h, w, dict(orientations = hogOrientation, pixels_per_cell = hogPixelPerCell, cells_per_block = hogCellsPerBlock))

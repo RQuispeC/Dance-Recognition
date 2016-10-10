@@ -137,26 +137,40 @@ def extractFeatures(train_path, training_names, classNumber = 2, threshold = 40,
     print cnt
     return featureList, labelList
 
-def trainModels(featureList, labelList, directory = "", classifier = 'SVC', params_classifier = dict(C=100, kernel='rbf', gamma=0.001)):
+def trainModels(featureList, labelList, directory = "", model = 'SVM', params_model = dict(C=100, kernel='rbf', gamma=0.001)):
     type_classifier = dict(
-        SVC = svm.SVC,
-        SVR = svm.SVR,
-        RandomForestClassifier = ensemble.RandomForestClassifier,
-        RandomForestRegressor = ensemble.RandomForestRegressor,
-        AdaClassifier = ensemble.AdaBoostClassifier,
-        AdaRegressor = ensemble.AdaBoostRegressor,
+        SVM = svm.SVC,
+        RandomForest = ensemble.RandomForestClassifier,
+        AdaBoost = ensemble.AdaBoostClassifier,
     )
 
-    if not type_classifier.has_key(classifier):
-      print "Invalid classifier. Please provide one of these:"
+    type_regressor = dict(
+        SVM = svm.SVR,
+        RandomForest = ensemble.RandomForestRegressor,
+        AdaBoost = ensemble.AdaBoostRegressor,
+    )
+
+    if not type_classifier.has_key(model):
+        print "Invalid classifier. Please provide one of these:"
         print type_classifier.keys()
 
-    clf = type_classifier[classifier](**params_classifier)
-    print "Model training has begun"
-    clf.fit(featureLest, labelList)
+    if not type_regressor.has_key(model):
+        print "Invalid regressor. Please provide one of these:"
+        print type_regressor.keys()
+
+    clf = type_classifier[model](**params_model)
+    print "Model training has began"
+    clf.fit(featureList, labelList)
     print "saving model ..."
-    joblib.dump(clf, os.path.join(directory, classifier + ".pkl"))
-    print classifier + "classifier has been saved"
+    joblib.dump(clf, os.path.join(directory, model + "Classifier.pkl"))
+    print model + " classifier has been saved"
+
+    reg = type_regressor[model](**params_model)
+    print "Model training has began"
+    reg.fit(featureList, labelList)
+    print "saving model ..."
+    joblib.dump(clf, os.path.join(directory, model + "Regressor.pkl"))
+    print model + " regressor has been saved"
 
 if __name__ == '__main__':
     # Get the path of the training set
@@ -175,11 +189,11 @@ if __name__ == '__main__':
     hogOrientation = 9
     threshold = 40 # set this parameter if classNumber = 2
     binaryClass = True
-    classifier = 'AdaClassifier'
-    params_classifier = dict(n_estimators = 150)
+    model = 'AdaBoost'
+    params_model = dict(n_estimators = 150)
 
     #create directory to save models
-    directory = createDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber, threshold, classifier + '_' + '_'.join(np.array([[k, v] for k, v in zip(params_classifier.keys(), params_classifier.values())]).flatten()))
+    directory = createDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber, threshold, model + '_' + '_'.join(np.array([[k, v] for k, v in zip(params_model.keys(), params_model.values())]).flatten()))
 
     #balance size of classes
     training_names = balanceClasses(training_names, classNumber, threshold)
@@ -188,4 +202,4 @@ if __name__ == '__main__':
     featureList, labelList = extractFeatures(train_path, training_names, classNumber, threshold, hogPixelPerCell, hogCellsPerBlock, hogOrientation)
 
     #train and save models
-    trainModels(featureList, labelList, directory, classifier, params_classifier)
+    trainModels(featureList, labelList, directory, model, params_model)
