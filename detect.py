@@ -63,7 +63,7 @@ def createDirectory(models_path):
 
 def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = True, pyr_hight = 3, h = 50, w = 50, params_hog = dict(orientations = 9, pixels_per_cell = (9, 9), cells_per_block = (2, 2))):
     print "Parameters are: "
-    print useSobel, pyr_hight, h, w, hogPixelPerCell, hogCellsPerBlock, hogOrientation
+    print useSobel, pyr_hight, h, w, params_hog.values()
 
     for name in training_names:
         image_path = os.path.join(test_path, name)
