@@ -66,7 +66,13 @@ def createDirectory(saveDirectory = "", w = 50, h = 50, pyr_hight = 3, shift = 2
     if not os.path.exists(directory):
         os.makedirs(directory)
     return directory
-
+def getRarePercentage(current, window, face):
+    windowPercentage = int((100.0*current)/(1.0*window))
+    facePercentage = int((100.0*current)/(1.0*face))
+    if(windowPercentage <= 25 and not facePercentage >= 50):
+        return windowPercentage
+    return max(windowPercentage, facePercentage)
+    
 def getLabelsByPercentage(train_path, training_names, directory,  bin_path, rgb_path, w = 50, h = 50, pyr_hight = 3, shift = 20, useSobel = True):
     #process images
     for name in training_names:
@@ -103,7 +109,7 @@ def getLabelsByPercentage(train_path, training_names, directory,  bin_path, rgb_
             tot = acumulative[n-1][m-1]
             for i in range(0, n-h, shift):
                 for j in range(0, m-w, shift):
-                    percentage = int((query(acumulative, i, j, i+h-1, j+w-1)*100.0)/(1.0*tot))
+                    percentage = getRarePercentage(query(acumulative, i, j, i+h-1, j+w-1), w*h, tot)
                     cropped = rgb_im[i:i+h, j:j+w]
                     pos = name.find("_")
                     pos = name.find("_", pos+1)
@@ -134,7 +140,7 @@ if __name__ == '__main__':
     w, h = 50, 50
     pyr_hight = 3
     shift = 20
-    useSobel =True
+    useSobel = False
 
     #create directory to save patches
     if(args["saveDirectory"]):
