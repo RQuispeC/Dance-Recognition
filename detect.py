@@ -2,6 +2,7 @@ import argparse as ap
 import cv2
 import numpy as np
 import os
+import caffe
 import re as regex
 
 from sklearn import svm, ensemble
@@ -47,7 +48,7 @@ def loadModels(models_path, model='SVC'):
 def recoverMetadata(models_path):
     models_path =  os.path.basename(os.path.normpath(models_path))
     myMetadata = models_path.split('_')
-    return myMetadata[4] == "sobel", int(myMetadata[0]), int(myMetadata[1]), int(myMetadata[2]), tuple(map(int, regex.findall(r'\d+', myMetadata[8]))), tuple(map(int, regex.findall(r'\d+', myMetadata[9]))), int(myMetadata[7])
+    return myMetadata[4] == "sobel", int(myMetadata[0]), int(myMetadata[1]), int(myMetadata[2])
 
 def createDefaultDirectory(models_path):
     dirName =os.path.basename(os.path.normpath(models_path))
@@ -69,9 +70,41 @@ def createDirectory(saveDirectory, models_path):
             os.makedirs(directory)
     return directory
 
-def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = True, pyr_hight = 3, h = 50, w = 50, params_hog = dict(orientations = 9, pixels_per_cell = (9, 9), cells_per_block = (2, 2))):
+def resizeToNetInputSize(im):
+    x, y = im.shape[:2]
+    if(x == 50 and y == 50):#set resize case for a 50x50 window
+        tmp_im = im
+        im = np.concatenate((im, im), axis = 0) #create a 100x50 matrix
+        im = np.concatenate((im, im), axis = 0) #create a 200x50 matrix
+        im = np.concatenate((im, tmp_im), axis = 0) #create a 250x50 matrix
+        tmp_im = im
+        im = np.concatenate((im, im), axis = 1) #create a 250x100 matrix
+        im = np.concatenate((im, im), axis = 1) #create a 200x200 matrix
+        im = np.concatenate((im, tmp_im), axis = 1) #create a 250x250 matrix
+    return  cv2.resize(im, (231, 231))
+
+def loadModel(networkName = "bvlc_reference_caffenet"):
+    if(networkName == "bvlc_reference_caffenet"):
+        return '/home/rodolfo/Downloads/image-software/caffe-master/models/bvlc_reference_caffenet/deploy_conv3.prototxt'
+
+def loadWeight(networkName = "bvlc_reference_caffenet"):
+    if(networkName == "bvlc_reference_caffenet"):
+        return '/home/rodolfo/Downloads/image-software/caffe-master/models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel'
+
+def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = True, pyr_hight = 3, h = 50, w = 50, networkName ="bvlc_reference_caffenet"):
     print "Parameters are: "
-    print useSobel, pyr_hight, h, w, params_hog.values()
+    print useSobel, pyr_hight, h, w
+
+    #load imaginet network
+    model = loadModel(networkName)
+    weight = loadWeight(networkName)
+    net = caffe.Net(model, caffe.TEST, weights = weight )
+    # load input and configure preprocessing
+    transformer = caffe.io.Transformer({'data': net.blobs['data'].data.shape})
+    transformer.set_mean('data', np.load('/home/rodolfo/Downloads/image-software/caffe-master/python/caffe/imagenet/ilsvrc_2012_mean.npy').mean(1).mean(1))
+    transformer.set_transpose('data', (2,0,1))
+    transformer.set_channel_swap('data', (2,1,0))
+    transformer.set_raw_scale('data', 255.0)
 
     for name in training_names:
         image_path = os.path.join(test_path, name)
@@ -81,7 +114,7 @@ def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = 
             im_or = cv2.normalize(im_or, None, 0, 255, cv2.NORM_MINMAX)
         else:
             im_or = cv2.imread(image_path)
-            im_or = cv2.cvtColor(im_or, cv2.COLOR_BGR2GRAY)
+            #im_or = cv2.cvtColor(im_or, cv2.COLOR_BGR2GRAY)
         print name
         for k in range(pyr_hight):
             im = cv2.resize(im_or, (0,0), fx = 1.0/(k+1.0), fy = 1.0/(k+1.0))
@@ -95,8 +128,17 @@ def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = 
             for i in range(0, n-h, shift):
                 for j in range(0, m-w, shift):
                     cropped = im[i:i+h, j:j+w]
-                    features = hog(cropped, **params_hog)
-                    features = features.reshape(1, len(features)) #reshape to 2D array
+
+                    #resize image to expected input size
+                    cropped = resizeToNetInputSize(cropped)
+                    #load the image in the data layer
+                    net.blobs['data'].data[...] = transformer.preprocess('data', cropped)
+                    #compute and set feature dimension
+                    net.forward()
+                    features = np.mean(net.blobs['conv3'].data, axis = 0) #original output has (10, 384, 13, 13) shape, this is converted to (384, 13, 13)
+                    features = np.array(features).reshape((features.size))
+                    features = features.reshape(1, -1)
+
                     prediction = clf.predict(features)
                     #detectImage[i, j] = prediction
                     regression = reg.predict(features)
@@ -121,10 +163,12 @@ def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = 
             a.set_title('detect')
             plt.imshow(detectImage)
             '''
-            plt.show()
+            #plt.show()
             fig.savefig(os.path.join(saveDirectory, name[:name.rfind(".")] + "_" + str(k+1) + ".jpg"), bbox_inches='tight')
 
 if __name__ == '__main__':
+    #setup GPU mode for caffe
+    caffe.set_mode_gpu()
 
     # Get the path of the trained models and test dataset
     parser = ap.ArgumentParser()
@@ -138,11 +182,12 @@ if __name__ == '__main__':
     training_names = os.listdir(test_path)
     models_path = args["modelsTrained"]
     model_name = 'AdaBoost'
+    networkName = "bvlc_reference_caffenet"
 
     clf, reg = loadModels(models_path, model_name)
 
     #recover training metadata
-    useSobel, pyr_hight, h, w, hogCellsPerBlock,  hogPixelPerCell, hogOrientation = recoverMetadata(models_path)
+    useSobel, pyr_hight, h, w = recoverMetadata(models_path)
     shift = 5 #shift of sliding windows in test
 
     #create directory file for results
@@ -152,4 +197,4 @@ if __name__ == '__main__':
         directory = createDefaultDirectory(models_path)
 
     #process images
-    runTest(clf, reg, test_path, training_names, directory, useSobel, pyr_hight, h, w, dict(orientations = hogOrientation, pixels_per_cell = hogPixelPerCell, cells_per_block = hogCellsPerBlock))
+    runTest(clf, reg, test_path, training_names, directory, useSobel, pyr_hight, h, w, networkName)

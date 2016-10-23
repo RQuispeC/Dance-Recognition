@@ -2,6 +2,7 @@ import argparse as ap
 import cv2
 import numpy as np
 import os
+import caffe
 
 from random import shuffle
 
@@ -40,6 +41,19 @@ def makeClean(training_names, train_path):
             im = cv2.imread(imagePath)
             print im.shape[:2]
 
+def resizeToNetInputSize(im):
+    x, y = im.shape[:2]
+    if(x == 50 and y == 50):#set resize case for a 50x50 window
+        tmp_im = im
+        im = np.concatenate((im, im), axis = 0) #create a 100x50 matrix
+        im = np.concatenate((im, im), axis = 0) #create a 200x50 matrix
+        im = np.concatenate((im, tmp_im), axis = 0) #create a 250x50 matrix
+        tmp_im = im
+        im = np.concatenate((im, im), axis = 1) #create a 250x100 matrix
+        im = np.concatenate((im, im), axis = 1) #create a 200x200 matrix
+        im = np.concatenate((im, tmp_im), axis = 1) #create a 250x250 matrix
+    return  cv2.resize(im, (231, 231))
+
 def readFeatures(directory, classNumber = 5):
     #read features already calculated
     print "reading"
@@ -65,7 +79,7 @@ def readFeatures(directory, classNumber = 5):
     tmpLabelList = []
     return featureList, labelList, percentageList, cnt
 
-def createDefaultDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber=2, threshold = 40, extraData = ""):
+def createDefaultDirectory(train_path, classNumber=2, threshold = 40, extraData = "", networkName = "bvlc_reference_caffenet"):
     if(classNumber != 2):
         threshold = ""
     else:
@@ -79,13 +93,13 @@ def createDefaultDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixe
     tmp_path =os.path.basename(os.path.normpath(models_path))
     models_path = train_path[:models_path.find(tmp_path)]
 
-    directory = os.path.join(models_path, "models/" + patches_matadata + "_trained_" + str(classNumber) + "_" + str(hogOrientation) + "_" + str(hogCellsPerBlock) + "_" + str(hogPixelPerCell)+threshold + extraData)
+    directory = os.path.join(models_path, "models/" + patches_matadata + "_trained_" + str(classNumber) + "_" + networkName + threshold + extraData)
     print "Data will be saved in: ", directory
     if not os.path.exists(directory):
             os.makedirs(directory)
     return directory
 
-def createDirectory(saveDirectory, train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber=2, threshold = 40, extraData = ""):
+def createDirectory(saveDirectory, train_path, classNumber=2, threshold = 40, extraData = "", networkName = "bvlc_reference_caffenet"):
     if(classNumber != 2):
         threshold = ""
     else:
@@ -95,7 +109,7 @@ def createDirectory(saveDirectory, train_path, hogOrientation, hogCellsPerBlock,
     #create directory to save models
     patches_matadata =os.path.basename(os.path.normpath(train_path))
 
-    directory = os.path.join(saveDirectory, "models/" + patches_matadata + "_trained_" + str(classNumber) + "_" + str(hogOrientation) + "_" + str(hogCellsPerBlock) + "_" + str(hogPixelPerCell)+threshold + extraData)
+    directory = os.path.join(saveDirectory, "models/" + patches_matadata + "_trained_" + str(classNumber) + "_" +  networkName + threshold + extraData)
     print "Data will be saved in: ", directory
     if not os.path.exists(directory):
             os.makedirs(directory)
@@ -129,27 +143,56 @@ def balanceClasses(training_names, classNumber = 2, threshold = 40):
     tmpTraining_names = []
     return training_names
 
-def extractFeatures(train_path, training_names, classNumber = 2, threshold = 40, hogPixelPerCell = (9, 9), hogCellsPerBlock  = (2, 2), hogOrientation = 9):
+def loadModel(networkName = "bvlc_reference_caffenet"):
+    if(networkName == "bvlc_reference_caffenet"):
+        return '/home/rodolfo/Downloads/image-software/caffe-master/models/bvlc_reference_caffenet/deploy_conv3.prototxt'
+
+def loadWeight(networkName = "bvlc_reference_caffenet"):
+    if(networkName == "bvlc_reference_caffenet"):
+        return '/home/rodolfo/Downloads/image-software/caffe-master/models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel'
+
+def extractFeatures(train_path, training_names, classNumber = 2, threshold = 40, networkName = "bvlc_reference_caffenet"):
     cnt = np.zeros(classNumber)
     featureList = []
     labelList = []
     percentageList = []
     print "extracting features"
     cnt = np.zeros(classNumber)
+
+    #load imaginet network
+    model = loadModel(networkName)
+    weight = loadWeight(networkName)
+    net = caffe.Net(model, caffe.TEST, weights = weight )
+    # load input and configure preprocessing
+    transformer = caffe.io.Transformer({'data': net.blobs['data'].data.shape})
+    transformer.set_mean('data', np.load('/home/rodolfo/Downloads/image-software/caffe-master/python/caffe/imagenet/ilsvrc_2012_mean.npy').mean(1).mean(1))
+    transformer.set_transpose('data', (2,0,1))
+    transformer.set_channel_swap('data', (2,1,0))
+    transformer.set_raw_scale('data', 255.0)
+
     for name in training_names:
         if(classNumber == 2):
             classID = getBinaryClass(int(getPercentage(name)), threshold)
         else:
             classID = getClass(int(getPercentage(name)), classNumber)
         imagePath = os.path.join(train_path, name)
-        im = cv2.imread(imagePath, False)
-        features = hog(im, orientations=hogOrientation,  pixels_per_cell=hogPixelPerCell, cells_per_block=hogCellsPerBlock, visualise=False)
+
+        im = cv2.imread(imagePath)
+        #resize image to expected input size
+        im = resizeToNetInputSize(im)
+        #load the image in the data layer
+        net.blobs['data'].data[...] = transformer.preprocess('data', im)
+        #compute and set feature dimension
+        net.forward()
+        features = np.mean(net.blobs['conv3'].data, axis = 0) #original output has (10, 384, 13, 13) shape, this is converted to (384, 13, 13)
+        features = np.array(features).reshape((features.size))
+
         featureList.append(features)
         labelList.append(classID)
         percentageList.append(int(getPercentage(name)))
         cnt[classID]+=1
     print "Number of elements per class:"
-    joblib.dump((featureList, labelList, percentageList, cnt), os.path.join(directory, "features_labels.pkl"))
+    #joblib.dump((featureList, labelList, percentageList, cnt), os.path.join(directory, "features_labels.pkl"))
     print cnt
     return featureList, labelList
 
@@ -189,6 +232,9 @@ def trainModels(featureList, labelList, directory = "", model = 'SVM', params_mo
     print model + " regressor has been saved"
 
 if __name__ == '__main__':
+    #setup GPU mode for caffe
+    caffe.set_mode_gpu()
+
     # Get the path of the training set
     parser = ap.ArgumentParser()
     parser.add_argument("-d", "--dataset", help="Path to train dataset", required="True")
@@ -201,25 +247,23 @@ if __name__ == '__main__':
 
     # set parameters
     classNumber = 2
-    hogCellsPerBlock = (2, 2)
-    hogPixelPerCell = (9, 9)
-    hogOrientation = 9
     threshold = 40 # set this parameter if classNumber = 2
     binaryClass = True
     model = 'AdaBoost'
     params_model = dict(n_estimators = 150)
+    networkName = "bvlc_reference_caffenet"
 
     #create directory to save models
     if(args["saveDirectory"]):
-        directory = createDirectory(args["saveDirectory"], train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber, threshold, model + '_' + '_'.join(np.array([[k, v] for k, v in zip(params_model.keys(), params_model.values())]).flatten()))
+        directory = createDirectory(args["saveDirectory"], train_path, classNumber, threshold, model + '_' + '_'.join(np.array([[k, v] for k, v in zip(params_model.keys(), params_model.values())]).flatten()), networkName)
     else:
-        directory = createDefaultDirectory(train_path, hogOrientation, hogCellsPerBlock, hogPixelPerCell, classNumber, threshold, model + '_' + '_'.join(np.array([[k, v] for k, v in zip(params_model.keys(), params_model.values())]).flatten()))
+        directory = createDefaultDirectory(train_path, classNumber, threshold, model + '_' + '_'.join(np.array([[k, v] for k, v in zip(params_model.keys(), params_model.values())]).flatten()), networkName)
 
     #balance size of classes
     training_names = balanceClasses(training_names, classNumber, threshold)
 
     #get features
-    featureList, labelList = extractFeatures(train_path, training_names, classNumber, threshold, hogPixelPerCell, hogCellsPerBlock, hogOrientation)
+    featureList, labelList = extractFeatures(train_path, training_names, classNumber, threshold, networkName)
 
     #train and save models
     trainModels(featureList, labelList, directory, model, params_model)

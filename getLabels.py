@@ -134,7 +134,7 @@ if __name__ == '__main__':
     w, h = 50, 50
     pyr_hight = 3
     shift = 20
-    useSobel =True
+    useSobel = True
 
     #create directory to save patches
     if(args["saveDirectory"]):
