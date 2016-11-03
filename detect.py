@@ -121,8 +121,9 @@ def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = 
             a.set_title('detect')
             plt.imshow(detectImage)
             '''
-            plt.show()
+            #plt.show()
             fig.savefig(os.path.join(saveDirectory, name[:name.rfind(".")] + "_" + str(k+1) + ".jpg"), bbox_inches='tight')
+            np.savez(os.path.join(saveDirectory, name[:name.rfind(".")] + "_" + str(k+1) + ".npz"), detectImageclf, detectImagereg)
 
 if __name__ == '__main__':
 
