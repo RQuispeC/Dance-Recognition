@@ -72,7 +72,7 @@ def getRarePercentage(current, window, face):
     if(windowPercentage <= 25 and not facePercentage >= 50):
         return windowPercentage
     return max(windowPercentage, facePercentage)
-    
+
 def getLabelsByPercentage(train_path, training_names, directory,  bin_path, rgb_path, w = 50, h = 50, pyr_hight = 3, shift = 20, useSobel = True):
     #process images
     for name in training_names:

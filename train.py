@@ -118,12 +118,12 @@ def balanceClasses(training_names, classNumber = 2, threshold = 40):
         cnt[classID]+=1
     print "initial class number"
     print cnt
-    
+
     sortedData.sort()
     tmpTraining_names = []
-    for it in len(sortedData):
+    for it in range(len(sortedData)):
         tmpTraining_names.append(sortedData[it][1])
-    
+
     lim = min(cnt)
     cnt = np.zeros(classNumber)
     for name in tmpTraining_names:
