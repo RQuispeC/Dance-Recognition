@@ -2,7 +2,13 @@ import argparse as ap
 import cv2
 import numpy as np
 import os
+
+# ==================  caffe  ======================================
+caffe_root = '/home/rodolfo/Downloads/image-software/caffe-master/'  # this file is expected to be in {caffe_root}/examples
+import sys
+sys.path.insert(0, caffe_root + 'python')
 import caffe
+# ===============================================================
 
 from random import shuffle
 
@@ -122,14 +128,22 @@ def balanceClasses(training_names, classNumber = 2, threshold = 40):
     np.random.shuffle(tmpTraining_names)
     training_names = []
     cnt = np.zeros(classNumber)
+    sortedData = []
     for name in tmpTraining_names:
         if(classNumber == 2):
             classID = getBinaryClass(int(getPercentage(name)), threshold)
         else:
             classID = getClass(int(getPercentage(name)), classNumber)
+        sortedData.append((int(getPercentage(name)), name))
         cnt[classID]+=1
     print "initial class number"
     print cnt
+
+    sortedData.sort()
+    tmpTraining_names = []
+    for it in range(len(sortedData)):
+        tmpTraining_names.append(sortedData[it][1])
+
     lim = min(cnt)
     cnt = np.zeros(classNumber)
     for name in tmpTraining_names:
@@ -247,7 +261,7 @@ if __name__ == '__main__':
 
     # set parameters
     classNumber = 2
-    threshold = 40 # set this parameter if classNumber = 2
+    threshold = 80 # set this parameter if classNumber = 2
     binaryClass = True
     model = 'AdaBoost'
     params_model = dict(n_estimators = 150)
