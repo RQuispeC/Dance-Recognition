@@ -73,6 +73,7 @@ def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = 
     print "Parameters are: "
     print useSobel, pyr_hight, h, w, params_hog.values()
     pyr_hight = 2
+    training_names.sort()
 
     for name in training_names:
         image_path = os.path.join(test_path, name)
