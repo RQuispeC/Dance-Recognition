@@ -124,17 +124,27 @@ def balanceClasses(training_names, classNumber = 2, threshold = 40):
     for it in range(len(sortedData)):
         tmpTraining_names.append(sortedData[it][1])
 
-    lim = min(cnt)
+    lim = int(min(cnt))
     cnt = np.zeros(classNumber)
+    negatives = []
     for name in tmpTraining_names:
         if(classNumber == 2):
             classID = getBinaryClass(int(getPercentage(name)), threshold)
         else:
             classID = getClass(int(getPercentage(name)), classNumber)
-        if(cnt[classID]<lim):
-            training_names.append(name)
-            cnt[classID]+=1
-    tmpTraining_names = []
+        
+        if classID == 0: #negatives
+            if int(getPercentage(name)) == 0:
+                negatives.insert(0, name) #insert 0 % negatives to begining 
+            else:
+                negatives.append(name)
+        else:
+            if(cnt[classID]<lim):
+                training_names.append(name)
+                cnt[classID]+=1
+    negatives = negatives[:lim]
+    training_names.extend(negatives)
+    shuffle(training_names)
     return training_names
 
 def extractFeatures(train_path, training_names, classNumber = 2, threshold = 40, hogPixelPerCell = (9, 9), hogCellsPerBlock  = (2, 2), hogOrientation = 9):
@@ -212,10 +222,10 @@ if __name__ == '__main__':
     hogCellsPerBlock = (2, 2)
     hogPixelPerCell = (9, 9)
     hogOrientation = 9
-    threshold = 60 # set this parameter if classNumber = 2
+    threshold = 30 # set this parameter if classNumber = 2
     binaryClass = True
     model = 'AdaBoost'
-    params_model = dict(n_estimators = 150)
+    params_model = dict(n_estimators = 300)
 
     #create directory to save models
     if(args["saveDirectory"]):

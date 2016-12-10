@@ -72,6 +72,7 @@ def createDirectory(saveDirectory, models_path):
 def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = True, pyr_hight = 3, h = 50, w = 50, params_hog = dict(orientations = 9, pixels_per_cell = (9, 9), cells_per_block = (2, 2))):
     print "Parameters are: "
     print useSobel, pyr_hight, h, w, params_hog.values()
+    pyr_hight = 2
 
     for name in training_names:
         image_path = os.path.join(test_path, name)
@@ -91,19 +92,18 @@ def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = 
                 continue
             detectImageclf = np.zeros((n, m))
             detectImagereg = np.zeros((n, m))
-            #detectImage = np.zeros((n, m))
             for i in range(0, n-h, shift):
                 for j in range(0, m-w, shift):
                     cropped = im[i:i+h, j:j+w]
                     features = hog(cropped, **params_hog)
                     features = features.reshape(1, len(features)) #reshape to 2D array
                     prediction = clf.predict(features)
-                    #detectImage[i, j] = prediction
                     regression = reg.predict(features)
                     if((i*j)%50000 == 0 and i>0 and j > 0 ):
                         print "Detecting face"
                     detectImageclf[i:i+h, j:j+w]+=prediction
                     detectImagereg[i:i+h, j:j+w]+=regression
+            
             fig = plt.figure()
             a=fig.add_subplot(1,3,1)
             a.set_title('Original')
@@ -116,13 +116,11 @@ def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = 
             a=fig.add_subplot(1,3,3)
             a.set_title('Regresor')
             plt.imshow(detectImagereg)
-            '''
-            a=fig.add_subplot(1,4,4)
-            a.set_title('detect')
-            plt.imshow(detectImage)
-            '''
+
             #plt.show()
             fig.savefig(os.path.join(saveDirectory, name[:name.rfind(".")] + "_" + str(k+1) + ".jpg"), bbox_inches='tight')
+
+
             np.savez(os.path.join(saveDirectory, name[:name.rfind(".")] + "_" + str(k+1) + ".npz"), detectImageclf, detectImagereg)
 
 if __name__ == '__main__':
