@@ -73,7 +73,7 @@ def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = 
     print "Parameters are: "
     print useSobel, pyr_hight, h, w, params_hog.values()
     pyr_hight = 2
-    training_names.sort()
+    training_names.sort(reverse=True)
 
     for name in training_names:
         image_path = os.path.join(test_path, name)
@@ -86,8 +86,12 @@ def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = 
             im_or = cv2.cvtColor(im_or, cv2.COLOR_BGR2GRAY)
         print name
         for k in range(pyr_hight):
-            im = cv2.resize(im_or, (0,0), fx = 1.0/(k+1.0), fy = 1.0/(k+1.0))
             print "Factor : ", k+1
+            if os.path.isfile(os.path.join(saveDirectory, name[:name.rfind(".")] + "_" + str(k+1) + ".npz")):
+                print 'already calculated'
+                continue
+
+            im = cv2.resize(im_or, (0,0), fx = 1.0/(k+1.0), fy = 1.0/(k+1.0))
             n, m = im.shape[:2]
             if(n<h or m<w):
                 continue
@@ -104,7 +108,7 @@ def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = 
                         print "Detecting face"
                     detectImageclf[i:i+h, j:j+w]+=prediction
                     detectImagereg[i:i+h, j:j+w]+=regression
-            
+            '''
             fig = plt.figure()
             a=fig.add_subplot(1,3,1)
             a.set_title('Original')
@@ -120,7 +124,7 @@ def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = 
 
             #plt.show()
             fig.savefig(os.path.join(saveDirectory, name[:name.rfind(".")] + "_" + str(k+1) + ".jpg"), bbox_inches='tight')
-
+            '''
 
             np.savez(os.path.join(saveDirectory, name[:name.rfind(".")] + "_" + str(k+1) + ".npz"), detectImageclf, detectImagereg)
 
