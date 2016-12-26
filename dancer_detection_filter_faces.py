@@ -184,7 +184,7 @@ def preprocess(img, plot, detected_img = [], name = "", type = 1):
         plt.tight_layout()
         #plt.show()
         fig.set_size_inches(28, 26)
-        fig.savefig(os.path.join('/home/rock/Pictures/', name + '_SCA' + '.jpg'), bbox_inches='tight')
+        fig.savefig(os.path.join('/home/rodolfo/Pictures/', name + '_SCA' + '.jpg'), bbox_inches='tight')
 
     return edges
 
@@ -232,12 +232,12 @@ def getBinaryClass(percentage, threshold):
 def trainEigenModel_justFaces(modelPath):
     model = cv2.face.createEigenFaceRecognizer()
 
-    #negatives_path = '/home/rock/Pictures/ds2/patches/3_50_50_20_noSharper/'
-    negatives_path = '/home/rock/Pictures/dances-data/ds4/patches/3_50_50_20_noSharper/'
+    #negatives_path = '/home/rodolfo/Pictures/ds2/patches/3_50_50_20_noSharper/'
+    negatives_path = '/home/rodolfo/Pictures/dances-data/ds4/patches/3_50_50_20_noSharper/'
     negatives_training_names = os.listdir(negatives_path)
 
-    #positives_path = '/home/rock/Pictures/ds2/patches/just-faces/'
-    positives_path = '/home/rock/Pictures/dances-data/ds4/patches/just-faces/'
+    #positives_path = '/home/rodolfo/Pictures/ds2/patches/just-faces/'
+    positives_path = '/home/rodolfo/Pictures/dances-data/ds4/patches/just-faces/'
     positives_training_names = os.listdir(positives_path)
     lim = 2*len(positives_training_names)
 
@@ -283,12 +283,12 @@ def trainEigenModel_justFaces(modelPath):
 def trainFisherModel_justFaces(modelPath):
     model = cv2.face.createFisherFaceRecognizer()
 
-    #negatives_path = '/home/rock/Pictures/ds2/patches/3_50_50_20_noSharper/'
-    negatives_path = '/home/rock/Pictures/dances-data/ds4/patches/3_50_50_20_noSharper/'
+    #negatives_path = '/home/rodolfo/Pictures/ds2/patches/3_50_50_20_noSharper/'
+    negatives_path = '/home/rodolfo/Pictures/dances-data/ds4/patches/3_50_50_20_noSharper/'
     negatives_training_names = os.listdir(negatives_path)
 
-    #positives_path = '/home/rock/Pictures/ds2/patches/just-faces/'
-    positives_path = '/home/rock/Pictures/dances-data/ds4/patches/just-faces/'
+    #positives_path = '/home/rodolfo/Pictures/ds2/patches/just-faces/'
+    positives_path = '/home/rodolfo/Pictures/dances-data/ds4/patches/just-faces/'
     positives_training_names = os.listdir(positives_path)
     lim = 4*len(positives_training_names)
 
@@ -334,10 +334,10 @@ def trainFisherModel_justFaces(modelPath):
 def runFisherFaces(originalImage, rectangles, name, plot = True):
     #train FisherFaces Model or recover if it already exists
     #path to normal trained data
-    #modelPath = '/home/rock/Pictures/ds2/models/fisherFaces_filter.ylm'
+    #modelPath = '/home/rodolfo/Pictures/ds2/models/fisherFaces_filter.ylm'
     #path to model trained with just faces data
-    #modelPath = '/home/rock/Pictures/ds2/models/fisherFaces_filter_justFaces.ylm'
-    modelPath = '/home/rock/Pictures/ds2/models/fisherFaces_filter_justFaces_full.ylm'
+    #modelPath = '/home/rodolfo/Pictures/ds2/models/fisherFaces_filter_justFaces.ylm'
+    modelPath = 'models/fisherFaces_filter_justFaces_full.ylm'
     if os.path.isfile(modelPath): #recover trained model
         fisherFacesModel = cv2.face.createFisherFaceRecognizer()
         fisherFacesModel.load(modelPath)
@@ -392,18 +392,18 @@ def runFisherFaces(originalImage, rectangles, name, plot = True):
 
     #plt.show()
     if plot:
-        fig.savefig(os.path.join('/home/rock/Pictures/', name + '_FisherFaces.jpg'), bbox_inches='tight')
-        cv2.imwrite(os.path.join('/home/rock/Pictures/', name + '_ORI.jpg'), rectanglesImage)
+        fig.savefig(os.path.join('/home/rodolfo/Pictures/', name + '_FisherFaces.jpg'), bbox_inches='tight')
+        cv2.imwrite(os.path.join('/home/rodolfo/Pictures/', name + '_ORI.jpg'), rectanglesImage)
 
     return rectangles_ans
 
 def runEigenFaces(originalImage, rectangles, name, plot = True):
     #train EigenFaces Model or recover if it already exists
     #path to normal trained data
-    #modelPath = '/home/rock/Pictures/ds2/models/eigenFaces_filter.ylm'
+    #modelPath = '/home/rodolfo/Pictures/ds2/models/eigenFaces_filter.ylm'
     #path to model trained with just faces data
-    #modelPath = '/home/rock/Pictures/ds2/models/eigenFaces_filter_justFaces.ylm'
-    modelPath = '/home/rock/Pictures/ds2/models/eigenFaces_filter_justFaces_full.ylm'
+    #modelPath = '/home/rodolfo/Pictures/ds2/models/eigenFaces_filter_justFaces.ylm'
+    modelPath = 'models/eigenFaces_filter_justFaces_full.ylm'
     if os.path.isfile(modelPath): #recover trained model
         eigenFacesModel = cv2.face.createEigenFaceRecognizer()
         eigenFacesModel.load(modelPath)
@@ -458,8 +458,8 @@ def runEigenFaces(originalImage, rectangles, name, plot = True):
 
     #plt.show()
     if plot:
-        fig.savefig(os.path.join('/home/rock/Pictures/', name + '_EigenFaces.jpg'), bbox_inches='tight')
-        cv2.imwrite(os.path.join('/home/rock/Pictures/', name + '_ORI.jpg'), rectanglesImage)
+        fig.savefig(os.path.join('/home/rodolfo/Pictures/', name + '_EigenFaces.jpg'), bbox_inches='tight')
+        cv2.imwrite(os.path.join('/home/rodolfo/Pictures/', name + '_ORI.jpg'), rectanglesImage)
 
     return rectangles_ans
 
@@ -470,7 +470,7 @@ def intersect(lineX, lineY):
     return lineX[0] <= lineY[0] and lineY[0] <= lineX[2] and lineY[1] <= lineX[1] and lineX[1] <= lineY[3]
 
 def cascadeLBPfilter(originalImage, rectangles, name, plot = True):
-    face_cascade = cv2.CascadeClassifier('opencv-haar-classifier-training/classifier-lbp-80-130/cascade.xml')
+    face_cascade = cv2.CascadeClassifier('models/cascade.xml')
     gray = cv2.cvtColor(originalImage, cv2.COLOR_BGR2GRAY)
     cascade_faces = face_cascade.detectMultiScale(gray, 1.3, 3)
     faces = []
@@ -512,12 +512,12 @@ def cascadeLBPfilter(originalImage, rectangles, name, plot = True):
             rectanglesAns.append(rectangle)
 
     if plot:
-        cv2.imwrite(os.path.join('/home/rock/Pictures/', name + '_LBP_cascade.jpg'), originalImage)
+        cv2.imwrite(os.path.join('/home/rodolfo/Pictures/', name + '_LBP_cascade.jpg'), originalImage)
 
     return rectanglesAns
 
 
-def printRectangles(img, rectangles, name, save_path  = '/home/rock/Pictures/', sufix = ''):
+def printRectangles(img, rectangles, name, save_path  = '/home/rodolfo/Pictures/', sufix = ''):
     it = 1
     maxi = 0
 
@@ -550,7 +550,7 @@ def multiFilter(originalImage, rectangles, name, plot = True):
         rectangles = runEigenFaces(originalImage.copy(), rectangles, name, plot = False)
     print '\t done'
 
-    print '\t running Eigenfaces filter ...'
+    print '\t running Fisherfaces filter ...'
     if len(rectangles) > 0:
         rectangles = runFisherFaces(originalImage.copy(), rectangles, name, plot = False)
     print '\t done'
@@ -570,7 +570,7 @@ def multiFilter(originalImage, rectangles, name, plot = True):
             cv2.rectangle(originalImage, (rectangle[0], rectangle[1]), (rectangle[2], rectangle[3]), plotColor, 2)
             cv2.putText(originalImage, str(it), (rectangle[0], rectangle[3]-5), 1, 1, plotColor , 2, cv2.LINE_AA )
             it += 1
-        cv2.imwrite(os.path.join('/home/rock/Pictures/', name + '_multi.jpg'), originalImage)
+        cv2.imwrite(os.path.join('/home/rodolfo/Pictures/', name + '_multi.jpg'), originalImage)
 
     return rectangles
 
@@ -717,7 +717,7 @@ def jointResults(img, name, detected_faces):
 
     return body
 
-def detectDancer(clf, reg, test_path, training_names, dataFiles, plot = False):
+def detectDancer(test_path, training_names, dataFiles, plot = False):
     training_names.sort()
     dfs_threshold = [0.70, 0.50, 0.10]
     for name in training_names:
@@ -773,22 +773,15 @@ def detectDancer(clf, reg, test_path, training_names, dataFiles, plot = False):
 
 
 if __name__ == '__main__':
-    #models_path = '/home/rock/Pictures/ds3/colla/models/3_50_50_20_noSharper_trained_2_9_(2, 2)_(9, 9)_30_AdaBoost_n_estimators_150/'
-    models_path = '/home/rock/Pictures/dances-data/ds4/models/3_50_50_20_noSharper_trained_2_9_(2, 2)_(9, 9)_30_AdaBoost_n_estimators_150/'
 
-    #dataFiles = '/home/rock/Pictures/ds2/results/3_50_50_20_noSharper_trained_2_9_(2, 2)_(9, 9)_30_AdaBoost_n_estimators_150/files/' #path to .npz files
-    #dataFiles = '/home/rock/Pictures/dances-data/ds4/results/small-dataset/files/'
-    dataFiles = '/home/rock/Pictures/dances-data/ds4/results/3_50_50_20_noSharper_trained_2_9_(2, 2)_(9, 9)_30_AdaBoost_n_estimators_150/'
+    # ====================== path to .npz files result of hog pyramid =================================
+    dataFiles = '/home/rodolfo/Pictures/dances-data/ds4/results/small-dataset/files/'
+    #dataFiles = '/home/rodolfo/Pictures/dances-data/ds4/results/3_50_50_20_noSharper_trained_2_9_(2, 2)_(9, 9)_30_AdaBoost_n_estimators_150/'
 
-    test_path = '/home/rock/Pictures/test/negrillo/'
-
-    model = 'AdaBoost'
-    clf = joblib.load(os.path.join(models_path, model + "Classifier.pkl"))
-    reg = joblib.load(os.path.join(models_path, model + "Regressor.pkl"))
+    # ====================== path to images =================================
+    test_path = '/home/rodolfo/Pictures/ds2/test/'
+    #test_path = '/home/rodolfo/Pictures/dances-data/train/negrillo/'
 
     training_names = os.listdir(test_path)
-    useSobel = False
-    h, w = 50, 50
-    pyr_hight = 1
 
-    detectDancer(clf, reg, test_path, training_names, dataFiles,  plot = 'True')
+    detectDancer(test_path, training_names, dataFiles,  plot = 'True')

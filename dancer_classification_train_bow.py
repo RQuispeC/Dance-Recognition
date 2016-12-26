@@ -32,6 +32,7 @@ def stackFeatures(features):
 def getData(train_path, featureType = 'SURF'):
   # Get the training classes names and store them in a list
   training_names = os.listdir(train_path)
+  training_names.sort(reverse = True)
 
   labels = []
   features = []
@@ -40,6 +41,7 @@ def getData(train_path, featureType = 'SURF'):
   for it in xrange(len(training_names)):
     training_name = training_names[it]
     images_names = os.listdir(train_path + training_name)
+    images_names.sort(reverse = True)
 
     print '\tfor ', training_name
     for image_name in images_names:
@@ -48,7 +50,8 @@ def getData(train_path, featureType = 'SURF'):
         continue
 
       img = cv2.imread(train_path + training_name + '/' + image_name)
-      rectangle = readRectangle(train_path + training_name + '/' + image_name[:name.rfind('.')] + '.txt')
+      rectangle = readRectangle(train_path + training_name + '/' + image_name[:image_name.rfind('.')] + '.txt')
+      print rectangle
       img = img[rectangle[1]:rectangle[3], rectangle[0]:rectangle[2]]
 
       if featureType == 'SURF':
@@ -177,7 +180,7 @@ if __name__ == '__main__':
   parser.add_argument("-d", "--dataset", help="Path to dataset", required="True")
   args = vars(parser.parse_args())
 
-  featureType = 'SURF' #SURF, SIFT
+  featureType = 'SIFT' #SURF, SIFT
   #n_word = 320
   type_coding = 'hard'
   #type_pooling = 'max'
@@ -191,7 +194,7 @@ if __name__ == '__main__':
   stacked_data = stackFeatures(features)
 
   for type_pooling in ['mean', 'sum', 'max', 'min']:
-    for n_word in [50, 70, 120, 220, 320, 420, 550]:  
+    for n_word in [1200, 1000, 800, 550, 420, 320, 220, 120, 70, 50]:  
       #get histograms
       save_data = featureType + '_' + str(n_word) + '_' + clustering_method + '_' + type_pooling + '_' + type_coding  
       print 'Getting histograms ...'
