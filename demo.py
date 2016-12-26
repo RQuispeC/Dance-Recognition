@@ -9,12 +9,73 @@ import os
 from sklearn.externals import joblib
 from sklearn import svm
 from sklearn.externals.joblib import Parallel, delayed
+import pylab as plt
+import gc
+
 
 sift = cv2.xfeatures2d.SIFT_create()
 surf = cv2.xfeatures2d.SURF_create()
 
+def plot_rectangles(img, rectangles, plotColor = (150, 255, 150)):
+  for rectangle in rectangles:
+    cv2.rectangle(img, (rectangle[0], rectangle[1]), (rectangle[2], rectangle[3]), plotColor, 2)
+  return img
+
 def plot_results(img , data , image_name, sufix = '', type = 'hasBoxes'):
-  return 1
+  fig = plt.figure(figsize=(30, 20))
+  plt.axis("off")
+  if type == 'hog':
+    a=fig.add_subplot(1,3,1)
+    a.set_title("Original")
+    plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+
+    a=fig.add_subplot(1,3,2)
+    a.set_title("Escala 1")
+    plt.imshow(data[0])
+
+    a=fig.add_subplot(1,3,3)
+    a.set_title("Escala 2")
+    plt.imshow(data[1])
+
+  if type == 'hasBoxes':
+    a=fig.add_subplot(1,2,1)
+    a.set_title("Escala 1")
+    plt.imshow(cv2.cvtColor(plot_rectangles(img.copy(), data[0], (10, 200, 200)), cv2.COLOR_BGR2RGB))
+
+    a=fig.add_subplot(1,2,2)
+    a.set_title("Escala 2")
+    plt.imshow(cv2.cvtColor(plot_rectangles(img.copy(), data[1], (200, 10, 200)), cv2.COLOR_BGR2RGB))
+    
+  if type == 'joint':
+    img = plot_rectangles(img.copy(), data[0], (10, 200, 200))
+    img = plot_rectangles(img.copy(), data[1], (200, 10, 200))
+    a=fig.add_subplot(1,1,1)    
+    a.set_title("faces")
+    plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+
+  if type == 'body':
+    max_area = 0
+    max_ind = 0
+    for ind  in xrange(len(data)):
+      rectangle = data[ind]
+      area = (rectangle[3] - rectangle[1]) *  (rectangle[3] - rectangle[0])
+      if area > max_area:
+        max_area = area
+        max_ind = ind
+    img = plot_rectangles(img.copy(), data, (10, 200, 200))
+    img = plot_rectangles(img.copy(), [data[max_ind]], (200, 10, 200))
+
+    a=fig.add_subplot(1,1,1)    
+    a.set_title("faces")
+    plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+
+  fig.savefig(os.path.join('/home/rodolfo/Pictures/', image_name + sufix+'.jpg'), bbox_inches='tight')
+
+  #free ram 
+  fig.clf()
+  plt.close()
+  del a
+  gc.collect()
 
 def hog_pyramid(img, hog_files_path, mode, image_name):
   dfs_threshold = [0.70, 0.50, 0.10]
@@ -79,6 +140,8 @@ def bodyEstimation(img, dancer_masks, mode, image_name):
   if len(body) == 0:
     print '============has no body============='
     body = [(0, 0, img.shape[1], img.shape[0])]
+  
+  plot_results(img.copy(), body, image_name, '_7_body', type = 'body')
   
   return img[body[0][1]:body[0][3], body[0][0]:body[0][2]]
 
@@ -159,15 +222,16 @@ if __name__ == '__main__':
   # mode defines the type of results, 
   # debug mode saves plot of each step 
   # test mode just saves plot of body detection.
-  mode = 'test' #test
+  mode = 'debug' #test
   
   # set path to data
-  images_path = '/home/rodolfo/Pictures/ds2/test/' 
+  images_path = '/home/rodolfo/Pictures/demo-data/images/' 
 
-  hog_files_path = '/home/rodolfo/Pictures/dances-data/ds4/results/small-dataset/files/'
+  hog_files_path = '/home/rodolfo/Pictures/demo-data/hog-files/'
 
 
   image_names = os.listdir(images_path)
+  image_names.sort()
 
   for image_name in image_names:
     extension = image_name[image_name.rfind('.'):]
@@ -181,4 +245,4 @@ if __name__ == '__main__':
     dance_label = classifyDancer(dancer, svm_classifier, codebook, featureType, n_word, clustering_method, type_pooling, type_coding)
 
     print 'Danza:', dances[dance_label]
-    raw_input ("Presione ENTER para continuar ...")
+    #raw_input ("Presione ENTER para continuar ...")
