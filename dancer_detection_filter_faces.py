@@ -574,7 +574,7 @@ def multiFilter(originalImage, rectangles, name, plot = True):
 
     return rectangles
 
-def improveFaces(img, rectanglesHOG, name, model):
+def improveFaces(img, rectanglesHOG):
     it = 1
     grayScale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img_or = img.copy()
@@ -607,10 +607,12 @@ def improveFaces(img, rectanglesHOG, name, model):
     overlapThresh = 0.5
     rectanglesHOG = non_max_suppression_fast(newRectangles, overlapThresh)
 
-    #run multiFilter
-    rectanglesHOG = multiFilter(img, rectanglesHOG, name, plot = False)
-
     return rectanglesHOG
+
+def filterFalsePositives(img, rectangles, name):
+    #run multiFilter
+    rectangles = multiFilter(img, rectangles, name, plot = False)
+    return rectangles
 
 def pixelSize(rectangle):
     return (rectangle[2] - rectangle[0] + 1) * (rectangle[3] - rectangle[1] + 1)
@@ -717,6 +719,17 @@ def jointResults(img, name, detected_faces):
 
     return body
 
+def runImageBFS(threshold, detectedClf, minPixelSize, n, m):
+    rectanglesClf = []
+    visited = np.zeros(detectedClf.shape[:2])
+    for i in range(n):
+        for j in range (m):
+            if(visited[i][j]==0 and detectedClf[i][j] >= threshold):
+                rectangle, visited = bfs(i, j, 0, 0, n+m, n+m, threshold, visited, detectedClf)
+                if(pixelSize(rectangle) > minPixelSize):
+                    rectanglesClf.append(rectangle)
+    return rectanglesClf
+
 def detectDancer(test_path, training_names, dataFiles, plot = False):
     training_names.sort()
     dfs_threshold = [0.70, 0.50, 0.10]
@@ -747,15 +760,11 @@ def detectDancer(test_path, training_names, dataFiles, plot = False):
             threshold = int((dfs_threshold[ind-1])*detectedClf.max())
             visited = np.zeros(detectedClf.shape[:2])
 
-            rectanglesClf = []
-            for i in range(n):
-                for j in range (m):
-                    if(visited[i][j]==0 and detectedClf[i][j] >= threshold):
-                        rectangle, visited = bfs(i, j, 0, 0, n+m, n+m, threshold, visited, detectedClf)
-                        if(pixelSize(rectangle) > minPixelSize):
-                            rectanglesClf.append(rectangle)
+            rectanglesClf = runImageBFS(threshold, detectedClf, minPixelSize, n, m)
 
-            faces = improveFaces(img.copy(), rectanglesClf, name[:name.rfind('.')] + '_' + str(ind), 'classifier')
+            faces = improveFaces(img.copy(), rectanglesClf)
+            faces = filterFalsePositives(img, faces, name[:name.rfind('.')])
+
             detected_faces.append(faces)
 
         print 'Joining results '
