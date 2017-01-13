@@ -50,9 +50,9 @@ def getData(train_path, featureType = 'SURF'):
         continue
 
       img = cv2.imread(train_path + training_name + '/' + image_name)
-      rectangle = readRectangle(train_path + training_name + '/' + image_name[:image_name.rfind('.')] + '.txt')
-      print rectangle
-      img = img[rectangle[1]:rectangle[3], rectangle[0]:rectangle[2]]
+      #rectangle = readRectangle(train_path + training_name + '/' + image_name[:image_name.rfind('.')] + '.txt')
+      #print rectangle
+      #img = img[rectangle[1]:rectangle[3], rectangle[0]:rectangle[2]]
 
       if featureType == 'SURF':
         _, feature = surf.detectAndCompute(img, None)

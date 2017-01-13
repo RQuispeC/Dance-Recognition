@@ -12,37 +12,15 @@ from sklearn.ensemble import AdaBoostClassifier, AdaBoostRegressor
 from sklearn.externals import joblib
 import pylab as plt
 from skimage.filters import sobel
+from sklearn.externals.joblib import Parallel, delayed
 
-def loadModels(models_path, model='SVC'):
-    type_classifier = dict(
-        SVM = svm.SVC,
-        RandomForest = ensemble.RandomForestClassifier,
-        AdaBoost = ensemble.AdaBoostClassifier,
-    )
+def loadModels():
+    clf1 = joblib.load('/home/rodolfo/Pictures/dances-data/ds4/models/3_50_50_20_noSharper_trained_2_9_(2, 2)_(9, 9)_30_RandomForest_n_estimators_150/' + 'RandomForestClassifier.pkl')
 
-    type_regressor = dict(
-        SVM = svm.SVR,
-        RandomForest = ensemble.RandomForestRegressor,
-        AdaBoost = ensemble.AdaBoostRegressor,
-    )
+    clf2 = joblib.load('/home/rodolfo/Pictures/dances-data/ds4/models/3_50_50_20_noSharper_trained_2_9_(2, 2)_(9, 9)_30_SVM_C_100_gamma_0.001/'+ 'SVMClassifier.pkl')
+    
 
-    if not type_classifier.has_key(model):
-        print "Invalid classifier. Please provide one of these:"
-        print type_classifier.keys()
-
-    if not type_regressor.has_key(model):
-        print "Invalid regressor. Please provide one of these:"
-        print type_regressor.keys()
-
-    print "Loading " + model + " classsifier ..."
-    clf = joblib.load(os.path.join(models_path, model + "Classifier.pkl"))
-    print model + " classifier loaded successfully"
-
-    print "Loading " + model + " regressor ..."
-    reg = joblib.load(os.path.join(models_path, model + "Regressor.pkl"))
-    print model + " regressor loaded successfully"
-
-    return clf, reg
+    return clf1, clf2
 
 def recoverMetadata(models_path):
     models_path =  os.path.basename(os.path.normpath(models_path))
@@ -50,16 +28,18 @@ def recoverMetadata(models_path):
     return myMetadata[4] == "sobel", int(myMetadata[0]), int(myMetadata[1]), int(myMetadata[2]), tuple(map(int, regex.findall(r'\d+', myMetadata[8]))), tuple(map(int, regex.findall(r'\d+', myMetadata[9]))), int(myMetadata[7])
 
 def createDefaultDirectory(models_path):
-    dirName =os.path.basename(os.path.normpath(models_path))
-    models_path = models_path[:models_path.find(dirName)]
-    tmp_path =os.path.basename(os.path.normpath(models_path))
-    models_path = models_path[:models_path.find(tmp_path)]
 
-    directory = os.path.join(models_path, "results/" + dirName)
-    print "Data will be saved in: ", directory
-    if not os.path.exists(directory):
-            os.makedirs(directory)
-    return directory
+    directory1 = os.path.join('/home/rodolfo/Pictures/dances-data/ds4/', "results/" + '3_50_50_20_noSharper_trained_2_9_(2, 2)_(9, 9)_30_RandomForest_n_estimators_150/')
+    print "Data will be saved in: ", directory1
+    if not os.path.exists(directory1):
+            os.makedirs(directory1)
+
+    directory2 = os.path.join('/home/rodolfo/Pictures/dances-data/ds4/', "results/" + '3_50_50_20_noSharper_trained_2_9_(2, 2)_(9, 9)_30_SVM_C_100_gamma_0.001/')
+    print "Data will be saved in: ", directory2
+    if not os.path.exists(directory2):
+            os.makedirs(directory2)
+
+    return directory1, directory2
 
 def createDirectory(saveDirectory, models_path):
     dirName =os.path.basename(os.path.normpath(models_path))
@@ -69,13 +49,17 @@ def createDirectory(saveDirectory, models_path):
             os.makedirs(directory)
     return directory
 
-def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = True, pyr_hight = 3, h = 50, w = 50, params_hog = dict(orientations = 9, pixels_per_cell = (9, 9), cells_per_block = (2, 2))):
+def runTest(randomForestModel, svmModel, test_path, training_names, saveDirectory1 = "", saveDirectory2 = "", useSobel = True, pyr_hight = 3, h = 50, w = 50, params_hog = dict(orientations = 9, pixels_per_cell = (9, 9), cells_per_block = (2, 2))):
     print "Parameters are: "
     print useSobel, pyr_hight, h, w, params_hog.values()
     pyr_hight = 2
-    training_names.sort(reverse=True)
+    training_names.sort()
 
     for name in training_names:
+        extension = name[name.rfind('.'):]
+        if extension == '.txt':
+            continue
+
         image_path = os.path.join(test_path, name)
         if(useSobel):
             im_or = cv2.imread(image_path, False)
@@ -87,7 +71,11 @@ def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = 
         print name
         for k in range(pyr_hight):
             print "Factor : ", k+1
-            if os.path.isfile(os.path.join(saveDirectory, name[:name.rfind(".")] + "_" + str(k+1) + ".npz")):
+            if os.path.isfile(os.path.join(saveDirectory1, name[:name.rfind(".")] + "_" + str(k+1) + ".npz")):
+                print 'already calculated'
+                continue
+        
+            if os.path.isfile(os.path.join(saveDirectory2, name[:name.rfind(".")] + "_" + str(k+1) + ".npz")):
                 print 'already calculated'
                 continue
 
@@ -95,65 +83,45 @@ def runTest(clf, reg, test_path, training_names, saveDirectory = "", useSobel = 
             n, m = im.shape[:2]
             if(n<h or m<w):
                 continue
-            detectImageclf = np.zeros((n, m))
-            detectImagereg = np.zeros((n, m))
+            detectImageclfRandom = np.zeros((n, m))
+            detectImageclfSVM = np.zeros((n, m))
             for i in range(0, n-h, shift):
                 for j in range(0, m-w, shift):
                     cropped = im[i:i+h, j:j+w]
                     features = hog(cropped, **params_hog)
                     features = features.reshape(1, len(features)) #reshape to 2D array
-                    prediction = clf.predict(features)
-                    regression = reg.predict(features)
+                    prediction1 = randomForestModel.predict(features)
+                    prediction2 = svmModel.predict(features)
                     if((i*j)%50000 == 0 and i>0 and j > 0 ):
                         print "Detecting face"
-                    detectImageclf[i:i+h, j:j+w]+=prediction
-                    detectImagereg[i:i+h, j:j+w]+=regression
-            '''
-            fig = plt.figure()
-            a=fig.add_subplot(1,3,1)
-            a.set_title('Original')
-            plt.imshow(im, cmap='Greys_r')
+                    detectImageclfRandom[i:i+h, j:j+w]+=prediction1
+                    detectImageclfSVM[i:i+h, j:j+w]+=prediction2
 
-            a=fig.add_subplot(1,3,2)
-            a.set_title('Clasificador')
-            plt.imshow(detectImageclf)
-
-            a=fig.add_subplot(1,3,3)
-            a.set_title('Regresor')
-            plt.imshow(detectImagereg)
-
-            #plt.show()
-            fig.savefig(os.path.join(saveDirectory, name[:name.rfind(".")] + "_" + str(k+1) + ".jpg"), bbox_inches='tight')
-            '''
-
-            np.savez(os.path.join(saveDirectory, name[:name.rfind(".")] + "_" + str(k+1) + ".npz"), detectImageclf, detectImagereg)
+            np.savez(os.path.join(saveDirectory1, name[:name.rfind(".")] + "_" + str(k+1) + ".npz"), detectImageclfRandom)
+            np.savez(os.path.join(saveDirectory2, name[:name.rfind(".")] + "_" + str(k+1) + ".npz"), detectImageclfSVM)
+ 
 
 if __name__ == '__main__':
 
     # Get the path of the trained models and test dataset
     parser = ap.ArgumentParser()
     parser.add_argument("-t", "--testingSet", help="Path to test dataset", required="True")
-    parser.add_argument("-m", "--modelsTrained", help="Path to trained models", required="True")
-    parser.add_argument("-s", "--saveDirectory", help="Path where you want to save the results of the ")
     args = vars(parser.parse_args())
 
     # Get the training path to labeled dataset
     test_path = args["testingSet"]
     training_names = os.listdir(test_path)
-    models_path = args["modelsTrained"]
-    model_name = 'AdaBoost'
+    models_path = '/home/rodolfo/Pictures/dances-data/ds4/models/3_50_50_20_noSharper_trained_2_9_(2, 2)_(9, 9)_30_RandomForest_n_estimators_150/'
+    
 
-    clf, reg = loadModels(models_path, model_name)
+    randomForestModel, svmModel = loadModels()
 
     #recover training metadata
     useSobel, pyr_hight, h, w, hogCellsPerBlock,  hogPixelPerCell, hogOrientation = recoverMetadata(models_path)
     shift = 5 #shift of sliding windows in test
 
     #create directory file for results
-    if(args["saveDirectory"]):
-        directory = createDirectory(args["saveDirectory"], models_path)
-    else:
-        directory = createDefaultDirectory(models_path)
+    directory1, directory2  = createDefaultDirectory(models_path)
 
     #process images
-    runTest(clf, reg, test_path, training_names, directory, useSobel, pyr_hight, h, w, dict(orientations = hogOrientation, pixels_per_cell = hogPixelPerCell, cells_per_block = hogCellsPerBlock))
+    runTest(randomForestModel, svmModel, test_path, training_names, directory1, directory2, useSobel, pyr_hight, h, w, dict(orientations = hogOrientation, pixels_per_cell = hogPixelPerCell, cells_per_block = hogCellsPerBlock))

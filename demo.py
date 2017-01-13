@@ -23,28 +23,32 @@ def plot_rectangles(img, rectangles, plotColor = (150, 255, 150)):
 
 def plot_results(img , data , image_name, sufix = '', type = 'hasBoxes'):
   fig = plt.figure(figsize=(30, 20))
-  plt.axis("off")
   if type == 'hog':
     a=fig.add_subplot(1,3,1)
     a.set_title("Original")
     plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    a.axis("off")
 
     a=fig.add_subplot(1,3,2)
     a.set_title("Escala 1")
     plt.imshow(data[0])
+    a.axis("off")
 
     a=fig.add_subplot(1,3,3)
     a.set_title("Escala 2")
     plt.imshow(data[1])
+    a.axis("off")
 
   if type == 'hasBoxes':
     a=fig.add_subplot(1,2,1)
     a.set_title("Escala 1")
     plt.imshow(cv2.cvtColor(plot_rectangles(img.copy(), data[0], (10, 200, 200)), cv2.COLOR_BGR2RGB))
+    a.axis("off")
 
     a=fig.add_subplot(1,2,2)
     a.set_title("Escala 2")
     plt.imshow(cv2.cvtColor(plot_rectangles(img.copy(), data[1], (200, 10, 200)), cv2.COLOR_BGR2RGB))
+    a.axis("off")
     
   if type == 'joint':
     img = plot_rectangles(img.copy(), data[0], (10, 200, 200))
@@ -52,6 +56,7 @@ def plot_results(img , data , image_name, sufix = '', type = 'hasBoxes'):
     a=fig.add_subplot(1,1,1)    
     a.set_title("faces")
     plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    a.axis("off")
 
   if type == 'body':
     max_area = 0
@@ -68,6 +73,7 @@ def plot_results(img , data , image_name, sufix = '', type = 'hasBoxes'):
     a=fig.add_subplot(1,1,1)    
     a.set_title("faces")
     plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    a.axis("off")
 
   fig.savefig(os.path.join('/home/rodolfo/Pictures/', image_name + sufix+'.jpg'), bbox_inches='tight')
 
@@ -231,7 +237,7 @@ if __name__ == '__main__':
 
 
   image_names = os.listdir(images_path)
-  image_names.sort()
+  #image_names.sort()
 
   for image_name in image_names:
     extension = image_name[image_name.rfind('.'):]
@@ -245,4 +251,4 @@ if __name__ == '__main__':
     dance_label = classifyDancer(dancer, svm_classifier, codebook, featureType, n_word, clustering_method, type_pooling, type_coding)
 
     print 'Danza:', dances[dance_label]
-    #raw_input ("Presione ENTER para continuar ...")
+    raw_input ("Presione ENTER para continuar ...")
