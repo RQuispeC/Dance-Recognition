@@ -53,7 +53,8 @@ def runTest(randomForestModel, svmModel, test_path, training_names, saveDirector
     print "Parameters are: "
     print useSobel, pyr_hight, h, w, params_hog.values()
     pyr_hight = 2
-    training_names.sort()
+    training_names.sort(reverse = True)
+    #training_names.sort()
 
     for name in training_names:
         extension = name[name.rfind('.'):]

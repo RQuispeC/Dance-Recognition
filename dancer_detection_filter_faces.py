@@ -1,3 +1,4 @@
+import argparse as ap
 import numpy as np
 import cv2
 import time
@@ -38,6 +39,10 @@ from skimage.color import rgb2gray
 
 dx = (0, 1, 0, -1, 1, -1, 1, -1)
 dy = (1, 0, -1, 0, -1, 1, 1, -1)
+path_detection_rf = '/home/rodolfo/Pictures/dances-data/ds4/RandomForest/'
+path_detection_svm = '/home/rodolfo/Pictures/dances-data/ds4/SVM/'
+path_detection_ada = '/home/rodolfo/Pictures/dances-data/ds4/AdaBoost/'
+
 
 def inside(i, j, dfsImg):
     return i>=0 and j>=0 and i < dfsImg.shape[0] and j < dfsImg.shape[1]
@@ -229,187 +234,16 @@ def getBinaryClass(percentage, threshold):
         return 1
     return 0
 
-def trainEigenModel_justFaces(modelPath):
-    model = cv2.face.createEigenFaceRecognizer()
 
-    #negatives_path = '/home/rodolfo/Pictures/ds2/patches/3_50_50_20_noSharper/'
-    negatives_path = '/home/rodolfo/Pictures/dances-data/ds4/patches/3_50_50_20_noSharper/'
-    negatives_training_names = os.listdir(negatives_path)
-
-    #positives_path = '/home/rodolfo/Pictures/ds2/patches/just-faces/'
-    positives_path = '/home/rodolfo/Pictures/dances-data/ds4/patches/just-faces/'
-    positives_training_names = os.listdir(positives_path)
-    lim = 2*len(positives_training_names)
-
-    threshold = 60
-    classNumber = 2
-
-    #read images and set labels
-    data = []
-    labels = []
-    for name in negatives_training_names:
-        if(classNumber == 2):
-            classID = getBinaryClass(int(getPercentage(name)), threshold)
-        else:
-            classID = getClass(int(getPercentage(name)), classNumber)
-
-        if classID == 1: #just get negatives data
-            continue
-        img = cv2.imread(negatives_path + name)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img = cv2.resize(img, (40,40)) #convert to a 8 multiple dimension to let face recoginizer work propertly https://goo.gl/LI5zL7
-
-        data.append(img)
-        labels.append(classID)
-
-        if len(data) == lim:
-            break
-
-    for name in positives_training_names:
-        img = cv2.imread(positives_path + name)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img = cv2.resize(img, (40,40)) #convert to a 8 multiple dimension to let face recoginizer work propertly https://goo.gl/LI5zL7
-
-        data.append(img)
-        labels.append(1)
-
-    print 'training model has began'
-    model.train(np.array(data), np.array(labels))
-    print 'saving model'
-    model.save(modelPath)
-    print 'Eigenfaces model saved'
-    return model
-
-def trainFisherModel_justFaces(modelPath):
-    model = cv2.face.createFisherFaceRecognizer()
-
-    #negatives_path = '/home/rodolfo/Pictures/ds2/patches/3_50_50_20_noSharper/'
-    negatives_path = '/home/rodolfo/Pictures/dances-data/ds4/patches/3_50_50_20_noSharper/'
-    negatives_training_names = os.listdir(negatives_path)
-
-    #positives_path = '/home/rodolfo/Pictures/ds2/patches/just-faces/'
-    positives_path = '/home/rodolfo/Pictures/dances-data/ds4/patches/just-faces/'
-    positives_training_names = os.listdir(positives_path)
-    lim = 4*len(positives_training_names)
-
-    threshold = 10
-    classNumber = 2
-
-    #read images and set labels
-    data = []
-    labels = []
-    for name in negatives_training_names:
-        if(classNumber == 2):
-            classID = getBinaryClass(int(getPercentage(name)), threshold)
-        else:
-            classID = getClass(int(getPercentage(name)), classNumber)
-
-        if classID == 1: #just get negatives data
-            continue
-        img = cv2.imread(negatives_path + name)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img = cv2.resize(img, (40,40)) #convert to a 8 multiple dimension to let face recoginizer work propertly https://goo.gl/LI5zL7
-
-        data.append(img)
-        labels.append(classID)
-
-        if len(data) == lim:
-            break
-
-    for name in positives_training_names:
-        img = cv2.imread(positives_path + name)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img = cv2.resize(img, (40,40)) #convert to a 8 multiple dimension to let face recoginizer work propertly https://goo.gl/LI5zL7
-
-        data.append(img)
-        labels.append(1)
-
-    print 'training model has began'
-    model.train(np.array(data), np.array(labels))
-    print 'saving model'
-    model.save(modelPath)
-    print 'Fisherfaces model saved'
-    return model
-
-def runFisherFaces(originalImage, rectangles, name, plot = True):
-    #train FisherFaces Model or recover if it already exists
-    #path to normal trained data
-    #modelPath = '/home/rodolfo/Pictures/ds2/models/fisherFaces_filter.ylm'
-    #path to model trained with just faces data
-    #modelPath = '/home/rodolfo/Pictures/ds2/models/fisherFaces_filter_justFaces.ylm'
-    modelPath = 'models/fisherFaces_filter_justFaces_full.ylm'
-    if os.path.isfile(modelPath): #recover trained model
-        fisherFacesModel = cv2.face.createFisherFaceRecognizer()
-        fisherFacesModel.load(modelPath)
-    else: #train model
-        #fisherFacesModel = trainFisherModel(modelPath)
-        fisherFacesModel = trainFisherModel_justFaces(modelPath)
-
-    it = 1
-    w, h = 50, 50
-    shift = 5
-    rectanglesImage = originalImage.copy()
-    rectangles_ans = []
-    for rectangle in rectangles:
-        img = originalImage[rectangle[1]:rectangle[3], rectangle[0]:rectangle[2]]
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        n, m = img.shape
-
-        detectedImage = np.zeros((n, m))
-        for i in xrange(0, n-h, shift):
-            for j in xrange(0, m-w, shift):
-                cropped = img[i:i+h, j:j+w].copy()
-                cropped = cv2.resize(cropped, (40, 40)) #convert to a 8 multiple dimension to let face recoginizer work propertly https://goo.gl/LI5zL7
-
-                label, confidence =  fisherFacesModel.predict(cropped)
-
-                if label == 0:
-                    continue
-
-                detectedImage[i:i+h, j:j+w]+=label*confidence
-
-        if plot:
-            #plot image with scores
-            fig = plt.figure(figsize=(30, 20))
-            a=fig.add_subplot(len(rectangles),2,it)
-            a.set_title(str(it))
-            plt.imshow(detectedImage)
-
-            #print rectangles and GLCM properties
-            plotColor = (150, 255, 150)
-            negativeplotColor = (150, 150, 255)
-            if round(detectedImage.sum()/(n*m), 3) < 8.0:
-                cv2.rectangle(rectanglesImage, (rectangle[0], rectangle[1]), (rectangle[2], rectangle[3]), negativeplotColor, 2)
-            else:
-                cv2.rectangle(rectanglesImage, (rectangle[0], rectangle[1]), (rectangle[2], rectangle[3]), plotColor, 2)
-            cv2.putText(rectanglesImage, str(it), (rectangle[0], rectangle[3]-5), 1, 1, plotColor , 2, cv2.LINE_AA )
-            cv2.putText(rectanglesImage, str(round(detectedImage.sum()/(n*m), 3)), (rectangle[0], rectangle[3]-20), 1, 1, plotColor , 2, cv2.LINE_AA )
-
-        if round(detectedImage.sum()/(n*m), 3) != 0.0:
-            rectangles_ans.append(rectangle)
-
-        it += 1
-
-    #plt.show()
-    if plot:
-        fig.savefig(os.path.join('/home/rodolfo/Pictures/', name + '_FisherFaces.jpg'), bbox_inches='tight')
-        cv2.imwrite(os.path.join('/home/rodolfo/Pictures/', name + '_ORI.jpg'), rectanglesImage)
-
-    return rectangles_ans
-
-def runEigenFaces(originalImage, rectangles, name, plot = True):
-    #train EigenFaces Model or recover if it already exists
-    #path to normal trained data
-    #modelPath = '/home/rodolfo/Pictures/ds2/models/eigenFaces_filter.ylm'
-    #path to model trained with just faces data
-    #modelPath = '/home/rodolfo/Pictures/ds2/models/eigenFaces_filter_justFaces.ylm'
+def runEigenFaces_Fisherfaces(originalImage, rectangles, name, plot = True):
+    
     modelPath = 'models/eigenFaces_filter_justFaces_full.ylm'
-    if os.path.isfile(modelPath): #recover trained model
-        eigenFacesModel = cv2.face.createEigenFaceRecognizer()
-        eigenFacesModel.load(modelPath)
-    else: #train model
-        #eigenFacesModel = trainEigenModel(modelPath)
-        eigenFacesModel = trainEigenModel_justFaces(modelPath)
+    eigenFacesModel = cv2.face.createEigenFaceRecognizer()
+    eigenFacesModel.load(modelPath)
+
+    modelPath = 'models/fisherFaces_filter_justFaces_full.ylm'
+    fisherFacesModel = cv2.face.createFisherFaceRecognizer()
+    fisherFacesModel.load(modelPath)
 
     it = 1
     w, h = 50, 50
@@ -421,7 +255,7 @@ def runEigenFaces(originalImage, rectangles, name, plot = True):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         n, m = img.shape
 
-        detectedImage = np.zeros((n, m))
+        acc = 0.0
         for i in xrange(0, n-h, shift):
             for j in xrange(0, m-w, shift):
                 cropped = img[i:i+h, j:j+w].copy()
@@ -431,8 +265,19 @@ def runEigenFaces(originalImage, rectangles, name, plot = True):
 
                 if confidence < 1000 or label == 0:
                     continue
+                else:
+                    acc +=label*confidence
+                    break
 
-                detectedImage[i:i+h, j:j+w]+=label*confidence
+                label, confidence =  fisherFacesModel.predict(cropped)
+                if label == 0:
+                    continue
+                else:
+                    acc +=label*confidence
+                    break
+            
+            if acc != 0.0:
+                break
 
         if plot:
             #plot image with scores
@@ -441,25 +286,12 @@ def runEigenFaces(originalImage, rectangles, name, plot = True):
             a.set_title(str(it))
             plt.imshow(detectedImage)
 
-            #print rectangles and GLCM properties
-            plotColor = (150, 255, 150)
-            negativeplotColor = (150, 150, 255)
-            if round(detectedImage.sum()/(n*m), 3) < 1.0:
-                cv2.rectangle(rectanglesImage, (rectangle[0], rectangle[1]), (rectangle[2], rectangle[3]), negativeplotColor, 2)
-            else:
-                cv2.rectangle(rectanglesImage, (rectangle[0], rectangle[1]), (rectangle[2], rectangle[3]), plotColor, 2)
             cv2.putText(rectanglesImage, str(it), (rectangle[0], rectangle[3]-5), 1, 1, plotColor , 2, cv2.LINE_AA )
-            cv2.putText(rectanglesImage, str(round(detectedImage.sum()/(n*m), 3)), (rectangle[0], rectangle[3]-20), 1, 1, plotColor , 2, cv2.LINE_AA )
 
-        if round(detectedImage.sum()/(n*m), 3) != 0.0:
+        if acc != 0.0:
             rectangles_ans.append(rectangle)
 
         it += 1
-
-    #plt.show()
-    if plot:
-        fig.savefig(os.path.join('/home/rodolfo/Pictures/', name + '_EigenFaces.jpg'), bbox_inches='tight')
-        cv2.imwrite(os.path.join('/home/rodolfo/Pictures/', name + '_ORI.jpg'), rectanglesImage)
 
     return rectangles_ans
 
@@ -543,25 +375,23 @@ def filterByPosition(img, rectanglesHOG):
             rectanglesAns.append(rectangle)
     return rectanglesAns
 
-def multiFilter(originalImage, rectangles, name, plot = True):
+def multiFilter(originalImage, rectangles, name, plot = True, useTexture = True):
     #filter by eigenfaces_justfaces, fisherFaces_justFaces, LBP cascade and position
-    print '\t running Eigenfaces filter ...'
-    if len(rectangles) > 0: 
-        rectangles = runEigenFaces(originalImage.copy(), rectangles, name, plot = False)
-    print '\t done'
-
-    print '\t running Fisherfaces filter ...'
-    if len(rectangles) > 0:
-        rectangles = runFisherFaces(originalImage.copy(), rectangles, name, plot = False)
-    print '\t done'
-
-    print '\t running LBP cascade filter ...'
-    if len(rectangles) > 0:
-        rectangles = cascadeLBPfilter(originalImage.copy(), rectangles, name, plot = False)
-    print '\t done'
-
     if len(rectangles) > 0:
         rectangles = filterByPosition(originalImage.copy(), rectangles)
+
+    print '\t running Eigenfaces and Fisherfaces filter ...', len(rectangles), 
+    if len(rectangles) > 0: 
+        rectangles = runEigenFaces_Fisherfaces(originalImage.copy(), rectangles, name, plot = False)
+    print '\t done'
+
+    if useTexture:
+        print '\t running LBP cascade filter ...', 
+        if len(rectangles) > 0:
+            rectangles = cascadeLBPfilter(originalImage.copy(), rectangles, name, plot = False)
+        print '\t done'
+
+    
 
     if plot:
         it = 1
@@ -609,9 +439,14 @@ def improveFaces(img, rectanglesHOG):
 
     return rectanglesHOG
 
+def filterFalsePositives_noViolaJones(img, rectangles, name):
+    #run multiFilter
+    rectangles = multiFilter(img, rectangles, name, plot = False, useTexture = False)
+    return rectangles
+
 def filterFalsePositives(img, rectangles, name):
     #run multiFilter
-    rectangles = multiFilter(img, rectangles, name, plot = False)
+    rectangles = multiFilter(img, rectangles, name, plot = False, useTexture = True)
     return rectangles
 
 def pixelSize(rectangle):
@@ -706,11 +541,14 @@ def compressBody(img, rectangles):
 def jointResults(img, name, detected_faces):
     detected_faces[0].extend(detected_faces[1])
 
+    print 'nms', len(detected_faces[0])
     faces = non_max_suppression_fast(np.array(detected_faces[0]), 0.80)
 
     bodyPercentage = 0.75
 
+    print 'extending body', len(detected_faces[0])
     body = extentToBody(img, faces, bodyPercentage)
+    print 'getting dancer'
     body = compressBody(img, body)
 
     if len(body) == 0:
@@ -730,7 +568,7 @@ def runImageBFS(threshold, detectedClf, minPixelSize, n, m):
                     rectanglesClf.append(rectangle)
     return rectanglesClf
 
-def detectDancer(test_path, training_names, dataFiles, plot = False):
+def detectDancer(test_path, training_names, dataFiles_ada, dataFiles_rf, dataFiles_svm, plot = False):
     training_names.sort()
     dfs_threshold = [0.70, 0.50, 0.10]
     for name in training_names:
@@ -741,56 +579,300 @@ def detectDancer(test_path, training_names, dataFiles, plot = False):
         img = cv2.imread(os.path.join(test_path, name))
         n, m = img.shape[:2]
 
-        detected_faces = []
-        dancerLocationName = os.path.join(test_path, name[:name.rfind('.')]) + '.txt'
+        normal_detected_faces_ada = []
+        normal_detected_faces_rf = []
+        normal_detected_faces_svm = []
+
+        noColor_noEdges_detected_faces_ada = []
+        noColor_noEdges_detected_faces_rf = []
+        noColor_noEdges_detected_faces_svm = []
+
+        noTexture_detected_faces_ada  = []
+        noTexture_detected_faces_rf  = []        
+        noTexture_detected_faces_svm = []
+
         print 'Working on ', name
-        if os.path.isfile(dancerLocationName):
+        if os.path.isfile(path_detection_svm + 'normal/'+ name[:name.rfind('.')] + '.txt'):
             print name, 'body has been already detected'
             continue
 
         for ind in range(1, 3):
             print 'Current pyramid level:   ', ind
-            file = np.load(os.path.join(dataFiles, name[:name.rfind('.')]+'_' + str(ind) + '.npz'))
+            file_ada = np.load(os.path.join(dataFiles_ada, name[:name.rfind('.')]+'_' + str(ind) + '.npz'))
+            file_rf = np.load(os.path.join(dataFiles_rf, name[:name.rfind('.')]+'_' + str(ind) + '.npz'))            
+            file_svm = np.load(os.path.join(dataFiles_svm, name[:name.rfind('.')]+'_' + str(ind) + '.npz'))
 
-            detectedClf = cv2.resize(file['arr_0'], (m, n))
-            detectedReg = cv2.resize(file['arr_1'], (m, n))
+            detectedClf_ada = cv2.resize(file_ada['arr_0'], (m, n))
+            detectedClf_rf = cv2.resize(file_rf['arr_0'], (m, n))            
+            detectedClf_svm = cv2.resize(file_svm['arr_0'], (m, n))
+
+            '''
+            fig = plt.figure(figsize=(30, 20))
+            
+            a=fig.add_subplot(1,3,1)
+            a.set_title("adaboost")
+            plt.imshow(detectedClf_ada)
+            a.axis("off")
+
+            a=fig.add_subplot(1,3,2)
+            a.set_title("random forest")
+            plt.imshow(detectedClf_rf)
+            a.axis("off")
+
+            a=fig.add_subplot(1,3,3)
+            a.set_title("svm")
+            plt.imshow(detectedClf_svm)
+            a.axis("off")
+
+            plt.show()
+            '''
 
             #create rectangles based on previus results
             minPixelSize = 1000
-            threshold = int((dfs_threshold[ind-1])*detectedClf.max())
-            visited = np.zeros(detectedClf.shape[:2])
+            threshold = int((dfs_threshold[ind-1])*detectedClf_ada.max())
+            visited = np.zeros(detectedClf_ada.shape[:2])
+            rectanglesClf_ada = runImageBFS(threshold, detectedClf_ada, minPixelSize, n, m)
 
-            rectanglesClf = runImageBFS(threshold, detectedClf, minPixelSize, n, m)
+            minPixelSize = 1000
+            threshold = int((dfs_threshold[ind-1])*detectedClf_rf.max())
+            visited = np.zeros(detectedClf_rf.shape[:2])
+            rectanglesClf_rf = runImageBFS(threshold, detectedClf_rf, minPixelSize, n, m)
 
-            faces = improveFaces(img.copy(), rectanglesClf)
-            faces = filterFalsePositives(img, faces, name[:name.rfind('.')])
+            minPixelSize = 1000
+            threshold = int((dfs_threshold[ind-1])*detectedClf_svm.max())
+            visited = np.zeros(detectedClf_svm.shape[:2])
+            rectanglesClf_svm = runImageBFS(threshold, detectedClf_svm, minPixelSize, n, m)
 
-            detected_faces.append(faces)
+            faces_ada = improveFaces(img.copy(), rectanglesClf_ada) #color y bordes
+            faces_rf = improveFaces(img.copy(), rectanglesClf_rf) #color y bordes
+            faces_svm = improveFaces(img.copy(), rectanglesClf_svm) #color y bordes
+            
+            #normal detection
+            normal_filtered_faces_ada = filterFalsePositives(img, faces_ada, name[:name.rfind('.')])
+            normal_filtered_faces_rf = filterFalsePositives(img, faces_rf, name[:name.rfind('.')])
+            normal_filtered_faces_svm = filterFalsePositives(img, faces_svm, name[:name.rfind('.')])
 
-        print 'Joining results '
-        dancers = jointResults(img.copy(), name[:name.rfind('.')], detected_faces)
+            normal_detected_faces_ada.append(normal_filtered_faces_ada)
+            normal_detected_faces_rf.append(normal_filtered_faces_rf)
+            normal_detected_faces_svm.append(normal_filtered_faces_svm)
+
+            #  no color , no edges detection
+            noColor_noEdges_filtered_faces_ada = filterFalsePositives(img, rectanglesClf_ada, name[:name.rfind('.')])
+            noColor_noEdges_filtered_faces_rf = filterFalsePositives(img, rectanglesClf_rf, name[:name.rfind('.')])            
+            noColor_noEdges_filtered_faces_svm = filterFalsePositives(img, rectanglesClf_svm, name[:name.rfind('.')])
+            
+            noColor_noEdges_detected_faces_ada.append(noColor_noEdges_filtered_faces_ada)
+            noColor_noEdges_detected_faces_rf.append(noColor_noEdges_filtered_faces_rf)          
+            noColor_noEdges_detected_faces_svm.append(noColor_noEdges_filtered_faces_svm)
+
+            #no texture detection
+            noTexture_filtered_faces_ada  = filterFalsePositives_noViolaJones(img, faces_ada, name[:name.rfind('.')])
+            noTexture_filtered_faces_rf  = filterFalsePositives_noViolaJones(img, faces_rf, name[:name.rfind('.')])            
+            noTexture_filtered_faces_svm = filterFalsePositives_noViolaJones(img, faces_svm, name[:name.rfind('.')])
+
+            noTexture_detected_faces_ada.append(noTexture_filtered_faces_ada)
+            noTexture_detected_faces_rf.append(noTexture_filtered_faces_rf)            
+            noTexture_detected_faces_svm.append(noTexture_filtered_faces_svm)
+
+        # =============== ADABOOST ==============================
+        print 'ADABOOST'
+
+        print 'Joining results noColor no Edges'
+        dancers = jointResults(img.copy(), name[:name.rfind('.')], noColor_noEdges_detected_faces_ada)
 
         #save body location
         print 'Saving dancer locations ...'
+        dancerLocationName = path_detection_ada + 'noColorNoEdges/' + name[:name.rfind('.')] + '.txt'
         dancerLocationFile = open(dancerLocationName, 'w')
         for dancer in dancers:
              dancerLocationFile.write(str(dancer[0]) + ' ' + str(dancer[1]) + ' ' + str(dancer[2]) + ' ' + str(dancer[3]))
         print 'done'
 
         if plot:
-            printRectangles(img.copy(), dancers, name[:name.rfind('.')] , sufix = '_body')
+            printRectangles(img.copy(), dancers, name[:name.rfind('.')] , sufix = '_body_adaboost_noColorNoEdges')
+
+        #//////////////
+
+        print 'Joining results no texture'
+        dancers = jointResults(img.copy(), name[:name.rfind('.')], noTexture_detected_faces_ada)
+
+        #save body location
+        print 'Saving dancer locations ...'
+        dancerLocationName = path_detection_ada + 'noTexture/' + name[:name.rfind('.')] + '.txt'
+        dancerLocationFile = open(dancerLocationName, 'w')
+        for dancer in dancers:
+             dancerLocationFile.write(str(dancer[0]) + ' ' + str(dancer[1]) + ' ' + str(dancer[2]) + ' ' + str(dancer[3]))
+        print 'done'
+
+        if plot:
+            printRectangles(img.copy(), dancers, name[:name.rfind('.')] , sufix = '_body_adaboost_noTexture')
+
+        #//////////////
+
+        print 'Joining results normal'
+        dancers = jointResults(img.copy(), name[:name.rfind('.')], normal_detected_faces_ada)
+
+        #save body location
+        print 'Saving dancer locations ...'
+        dancerLocationName = path_detection_ada + 'normal/' + name[:name.rfind('.')] + '.txt'
+        dancerLocationFile = open(dancerLocationName, 'w')
+        for dancer in dancers:
+             dancerLocationFile.write(str(dancer[0]) + ' ' + str(dancer[1]) + ' ' + str(dancer[2]) + ' ' + str(dancer[3]))
+        print 'done'
+
+        if plot:
+            printRectangles(img.copy(), dancers, name[:name.rfind('.')] , sufix = '_body_adaboost_normal')
+
+        # =============== RANDOM FOREST ==============================
+
+        print 'RANDOM FOREST'
+
+        print 'Joining results no Color no edges'
+        dancers = jointResults(img.copy(), name[:name.rfind('.')], noColor_noEdges_detected_faces_rf)
+
+        #save body location
+        print 'Saving dancer locations ...'
+        dancerLocationName = path_detection_rf + 'noColorNoEdges/' + name[:name.rfind('.')] + '.txt'
+        dancerLocationFile = open(dancerLocationName, 'w')
+        for dancer in dancers:
+             dancerLocationFile.write(str(dancer[0]) + ' ' + str(dancer[1]) + ' ' + str(dancer[2]) + ' ' + str(dancer[3]))
+        print 'done'
+
+        if plot:
+            printRectangles(img.copy(), dancers, name[:name.rfind('.')] , sufix = '_body_randomForest_noColorNoEdges')
+
+        #//////////////
+
+        print 'Joining results no texture'
+        dancers = jointResults(img.copy(), name[:name.rfind('.')], noTexture_detected_faces_rf)
+
+        #save body location
+        print 'Saving dancer locations ...'
+        dancerLocationName = path_detection_rf + 'noTexture/' + name[:name.rfind('.')] + '.txt'
+        dancerLocationFile = open(dancerLocationName, 'w')
+        for dancer in dancers:
+             dancerLocationFile.write(str(dancer[0]) + ' ' + str(dancer[1]) + ' ' + str(dancer[2]) + ' ' + str(dancer[3]))
+        print 'done'
+
+        if plot:
+            printRectangles(img.copy(), dancers, name[:name.rfind('.')] , sufix = '_body_randomForest_noTexture')
+
+        #//////////////
+
+        print 'Joining results normal'
+        dancers = jointResults(img.copy(), name[:name.rfind('.')], normal_detected_faces_rf)
+
+        #save body location
+        print 'Saving dancer locations ...'
+        dancerLocationName = path_detection_rf + 'normal/' + name[:name.rfind('.')] + '.txt'
+        dancerLocationFile = open(dancerLocationName, 'w')
+        for dancer in dancers:
+             dancerLocationFile.write(str(dancer[0]) + ' ' + str(dancer[1]) + ' ' + str(dancer[2]) + ' ' + str(dancer[3]))
+        print 'done'
+
+        if plot:
+            printRectangles(img.copy(), dancers, name[:name.rfind('.')] , sufix = '_body_randomForest_normal')
+
+        # =============== SVM ==============================
+
+        print 'SVM'
+
+        print 'Joining results no color no edges'
+        dancers = jointResults(img.copy(), name[:name.rfind('.')], noColor_noEdges_detected_faces_svm)
+
+        #save body location
+        print 'Saving dancer locations ...'
+        dancerLocationName = path_detection_svm + 'noColorNoEdges/' + name[:name.rfind('.')] + '.txt'
+        dancerLocationFile = open(dancerLocationName, 'w')
+        for dancer in dancers:
+             dancerLocationFile.write(str(dancer[0]) + ' ' + str(dancer[1]) + ' ' + str(dancer[2]) + ' ' + str(dancer[3]))
+        print 'done'
+
+        if plot:
+            printRectangles(img.copy(), dancers, name[:name.rfind('.')] , sufix = '_body_svm_noColorNoEdges')
+
+        #//////////////
+
+        print 'Joining results no texture'
+        dancers = jointResults(img.copy(), name[:name.rfind('.')], noTexture_detected_faces_svm)
+
+        #save body location
+        print 'Saving dancer locations ...'
+        dancerLocationName = path_detection_svm + 'noTexture/' + name[:name.rfind('.')] + '.txt'
+        dancerLocationFile = open(dancerLocationName, 'w')
+        for dancer in dancers:
+             dancerLocationFile.write(str(dancer[0]) + ' ' + str(dancer[1]) + ' ' + str(dancer[2]) + ' ' + str(dancer[3]))
+        print 'done'
+
+        if plot:
+            printRectangles(img.copy(), dancers, name[:name.rfind('.')] , sufix = '_body_svm_noTexture')
+
+        #//////////////
+
+        print 'Joining results normal'
+        dancers = jointResults(img.copy(), name[:name.rfind('.')], normal_detected_faces_svm)
+
+        #save body location
+        print 'Saving dancer locations ...'
+        dancerLocationName = path_detection_svm + 'normal/' + name[:name.rfind('.')] + '.txt'
+        dancerLocationFile = open(dancerLocationName, 'w')
+        for dancer in dancers:
+             dancerLocationFile.write(str(dancer[0]) + ' ' + str(dancer[1]) + ' ' + str(dancer[2]) + ' ' + str(dancer[3]))
+        print 'done'
+
+        if plot:
+            printRectangles(img.copy(), dancers, name[:name.rfind('.')] , sufix = '_body_svm_normal')
+
+        
+
+def createDirectories():
+    directory = path_detection_ada + 'normal/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    directory = path_detection_ada + 'noColorNoEdges/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    directory = path_detection_ada + 'noTexture/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    directory = path_detection_rf + 'normal/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    directory = path_detection_rf + 'noColorNoEdges/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    directory = path_detection_rf + 'noTexture/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    directory = path_detection_svm + 'normal/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    directory = path_detection_svm + 'noColorNoEdges/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    directory = path_detection_svm + 'noTexture/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 
 if __name__ == '__main__':
+    createDirectories()
 
-    # ====================== path to .npz files result of hog pyramid =================================
-    dataFiles = '/home/rodolfo/Pictures/dances-data/ds4/results/small-dataset/files/'
-    #dataFiles = '/home/rodolfo/Pictures/dances-data/ds4/results/3_50_50_20_noSharper_trained_2_9_(2, 2)_(9, 9)_30_AdaBoost_n_estimators_150/'
+    # ====================== path to .npz files result of hog pyramid =================================    
+    dataFiles_ada = '/home/rodolfo/Pictures/dances-data/ds4/results/3_50_50_20_noSharper_trained_2_9_(2, 2)_(9, 9)_30_AdaBoost_n_estimators_150/'
+    dataFiles_rf  = '/home/rodolfo/Pictures/dances-data/ds4/results/3_50_50_20_noSharper_trained_2_9_(2, 2)_(9, 9)_30_RandomForest_n_estimators_150/'
+    dataFiles_svm = '/home/rodolfo/Pictures/dances-data/ds4/results/3_50_50_20_noSharper_trained_2_9_(2, 2)_(9, 9)_30_SVM_C_100_gamma_0.001/'
+    
 
     # ====================== path to images =================================
-    test_path = '/home/rodolfo/Pictures/ds2/test/'
-    #test_path = '/home/rodolfo/Pictures/dances-data/train/negrillo/'
+    # Get the path of the trained models and test dataset
+    parser = ap.ArgumentParser()
+    parser.add_argument("-t", "--testingSet", help="Path to test dataset", required="True")
+    args = vars(parser.parse_args())
+    test_path = args["testingSet"]
 
     training_names = os.listdir(test_path)
 
-    detectDancer(test_path, training_names, dataFiles,  plot = 'True')
+    detectDancer(test_path, training_names, dataFiles_ada, dataFiles_rf, dataFiles_svm,  plot = 'True')
