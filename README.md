@@ -1,6 +1,6 @@
-# Face Detector
+# Mask Detection and Dancers Recognition
 
-This project aims at detecting face location in images for typical dances from the city of Cusco - Peru.
+This project aims at detecting mask location and recognize images for typical dances from the city of Cusco - Peru.
 
 Basic system requirements:
 - OpenCV  3.0.0 or greater
