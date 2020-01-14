@@ -1,3 +1,6 @@
+### Disclaimer
+Please note that this readme is out of date, so it may not include full instructions. Author may update it in the future.
+
 # Mask Detection and Dancers Recognition
 
 This project aims at detecting mask location and recognize images for typical dances from the city of Cusco - Peru.
